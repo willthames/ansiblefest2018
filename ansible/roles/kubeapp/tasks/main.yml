@@ -7,33 +7,33 @@
 - name: create secrets list
   set_fact:
     k8s_secrets: >
-      {{ k8s_secrets + {'definition': lookup('template', item)|split('---')|map('from_yaml')|list,
-                        'version': lookup('pipe', 'git describe --long --first-parent $(git log -n1 --pretty=format:%H ' + item + ')')} }}
+      {{ k8s_secrets + [{'definition': lookup('file', item).split('---')|map('from_yaml')|list,
+                         'git_version': lookup('pipe', 'git describe --long --first-parent $(git log -n1 --pretty=format:%H ' + item + ')')}] }}
   loop: "{{ query('fileglob', 'templates/' + application + '/*-secrets.yml')|sort }}"
-  no_log: yes
+  #no_log: yes
 
 - name: create config list
   set_fact:
     k8s_configmaps: >
-      {{ k8s_configmaps + {'definition': lookup('template', item)|split('---')|map('from_yaml')|list,
-                           'version': lookup('pipe', 'git describe --long --first-parent $(git log -n1 --pretty=format:%H ' + item + ')')} }}
+      {{ k8s_configmaps + [{'definition': lookup('file', item).split('---')|map('from_yaml')|list,
+                            'git_version': lookup('pipe', 'git describe --long --first-parent $(git log -n1 --pretty=format:%H ' + item + ')')}] }}
   loop: "{{ query('fileglob', 'templates/' + application + '/*-configmaps.yml')|sort }}"
 
 - name: create manifests list
   set_fact:
     k8s_resources: >
-      {{ k8s_resources + {'definition': lookup('template', item)|split('---')|map('from_yaml')|list,
-                          'version': lookup('pipe', 'git describe --long --first-parent $(git log -n1 --pretty=format:%H ' + item + ')')} }}
+      {{ k8s_resources + [{'definition': lookup('file', item).split('---')|map('from_yaml')|list,
+                           'git_version': lookup('pipe', 'git describe --long --first-parent $(git log -n1 --pretty=format:%H ' + item + ')')}] }}
   loop: "{{ query('fileglob', 'templates/' + application + '/*-resources.yml')|sort }}"
 
 - name: apply secrets
-  include_task: secrets.yml
+  include_tasks: secrets.yml
   loop: "{{ k8s_secrets }}"
 
 - name: apply config maps
-  include_task: configmaps.yml
+  include_tasks: configmaps.yml
   loop: "{{ k8s_configmaps }}"
 
 - name: apply remaining resources
-  include_task: resources.yml
+  include_tasks: resources.yml
   loop: "{{ k8s_resources }}"
