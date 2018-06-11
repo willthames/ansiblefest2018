@@ -1,0 +1,2 @@
+This file is only displayed if the WWW_DATA environment variable is unset,
+or set to 'helloworld.txt'

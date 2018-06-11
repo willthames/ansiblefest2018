@@ -1,0 +1,13 @@
+FROM python:3.6.5-alpine3.7
+
+EXPOSE 5000 5000
+ENV FLASK_APP /app/server.py
+CMD python -m flask run --host 0.0.0.0
+WORKDIR /app
+COPY requirements.txt requirements.txt
+RUN pip install -r requirements.txt
+USER 1000
+COPY static static
+COPY templates templates
+COPY server.py server.py
+COPY helloworld.txt helloworld.txt
