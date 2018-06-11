@@ -1,16 +1,21 @@
 - name: empty manifest and secret lists (important if role is run twice!)
   set_fact:
-    k8s_secrets: []
     k8s_configmaps: []
     k8s_resources: []
 
 - name: create secrets list
   set_fact:
-    k8s_secrets: >
-      {{ k8s_secrets + [{'definition': lookup('file', item).split('---')|map('from_yaml')|list,
-                         'git_version': lookup('pipe', 'git describe --long --first-parent $(git log -n1 --pretty=format:%H ' + item + ')')}] }}
-  loop: "{{ query('fileglob', 'templates/' + application + '/*-secrets.yml')|sort }}"
+    kubeapp_git_version: "{{ lookup('pipe', 'git describe --long --first-parent $(git log -n1 --pretty=format:%H ' + item + ')') }}"
+  loop: "{{ query('fileglob', 'templates/' + application + '/*-secrets.yml') }}"
   #no_log: yes
+  register: kubeapp_git_versions
+
+- name: create secrets list
+  set_fact:
+    kubeapp_definitions: "{{ lookup('template', item.item, template_vars={'git_version': item.ansible_facts.kubeapp_git_version}).split('---')|map('from_yaml')|list }}"
+  loop: "{{ kubeapp_git_versions.results }}"
+  #no_log: yes
+  register: kubeapp_secrets
 
 - name: create config list
   set_fact:
@@ -28,7 +33,9 @@
 
 - name: apply secrets
   include_tasks: secrets.yml
-  loop: "{{ k8s_secrets }}"
+  loop: "{{ kubeapp_secrets.results }}"
+  loop_control:
+    loop_var: kubeapp_resource
 
 - name: apply config maps
   include_tasks: configmaps.yml
