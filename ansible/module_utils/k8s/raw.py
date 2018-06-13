@@ -20,6 +20,7 @@ from __future__ import absolute_import, division, print_function
 
 
 from ansible.module_utils.k8s.common import KubernetesAnsibleModule
+from ansible.module_utils.common.dict_transformations import dict_merge
 
 
 try:
@@ -155,11 +156,13 @@ class KubernetesRawModule(KubernetesAnsibleModule):
                 if not self.check_mode:
                     try:
                         k8s_obj = resource.replace(definition, name=name, namespace=namespace).to_dict()
-                        match, diffs = self.diff_objects(existing.to_dict(), k8s_obj)
-                        result['result'] = k8s_obj
                     except DynamicApiError as exc:
                         self.fail_json(msg="Failed to replace object: {0}".format(exc.body),
                                        error=exc.status, status=exc.status, reason=exc.reason)
+                else:
+                    k8s_obj = definition
+                match, diffs = self.diff_objects(existing.to_dict(), k8s_obj)
+                result['result'] = k8s_obj
                 result['changed'] = not match
                 result['method'] = 'replace'
                 result['diff'] = diffs
@@ -169,11 +172,13 @@ class KubernetesRawModule(KubernetesAnsibleModule):
             if not self.check_mode:
                 try:
                     k8s_obj = resource.patch(definition, name=name, namespace=namespace).to_dict()
-                    match, diffs = self.diff_objects(existing.to_dict(), k8s_obj)
-                    result['result'] = k8s_obj
                 except DynamicApiError as exc:
                     self.fail_json(msg="Failed to patch object: {0}".format(exc.body),
                                    error=exc.status, status=exc.status, reason=exc.reason)
+            else:
+                k8s_obj = dict_merge(existing.to_dict(), definition)
+            match, diffs = self.diff_objects(existing.to_dict(), k8s_obj)
+            result['result'] = k8s_obj
             result['changed'] = not match
             result['method'] = 'patch'
             result['diff'] = diffs
