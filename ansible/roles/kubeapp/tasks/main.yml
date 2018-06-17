@@ -32,7 +32,9 @@
   loop: "{{ query('fileglob', 'templates/' + application + '/*-resources.yml')|sort }}"
 
 - name: apply secrets
-  include_tasks: secrets.yml
+  include_tasks: resources.yml
+  vars:
+    resource_type: Secret
   loop: "{{ kubeapp_secrets.results }}"
   loop_control:
     loop_var: kubeapp_resource
