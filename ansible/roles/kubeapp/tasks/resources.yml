@@ -1,6 +1,6 @@
 - include_tasks: resource.yml
-  loop: "{{ kubeapp_resource.ansible_facts.kubeapp_definitions }}"
+  loop: "{{ kubeapp_resources.definitions }}"
   var:
-    git_version: "{{ kubeapp_resource.git_version }}"
+    git_version: "{{ kubeapp_resources.git_version }}"
   loop_control:
-    loop_var: kubeapp_definition
+    loop_var: kubeapp_resource

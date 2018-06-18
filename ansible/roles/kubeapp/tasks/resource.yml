@@ -1,40 +1,51 @@
+- name: set resource_type
+  set_fact:
+    kubeapp_resource_type: "{{ kubeapp_resource.kind }}"
+
 - name: find existing resources
   set_fact:
-    kubeapp_existing_resources: "{{ query('k8s', kind=resource_type, label_selector=kubeapp_prefix_label + '=' + kubeapp_definition.metadata.labels[kubeapp_prefix_label]) }}"
-  no_log: "{{ resource_type == 'Secret' }}"
+    kubeapp_existing_resources: "{{ query('k8s', kind=kubeapp_resource_type, label_selector=kubeapp_prefix_label + '=' + kubeapp_resource.metadata.labels[kubeapp_prefix_label]) }}"
+  when: kubeapp_prefix_label in kubeapp_resource.metadata.labels|default({})
+  #no_log: "{{ kubeapp_resource_type == 'Secret' }}"
+
+- name: find existing resource
+  set_fact:
+    kubeapp_existing_resources: "{{ query('k8s', kind=kubeapp_resource_type, name=kubeapp_resource.metadata.name) }}"
+  when: kubeapp_prefix_label not in kubeapp_resource.metadata.labels|default({})
+  #no_log: "{{ kubeapp_resource_type == 'Secret' }}"
 
 - block:
     - name: find most recent resource
       set_fact:
         kubeapp_most_recent_resource: "{{ kubeapp_existing_resources|last }}"
-      no_log: "{{ resource_type == 'Secret' }}"
+      #no_log: "{{ kubeapp_resource_type == 'Secret' }}"
 
     - name: set patch metadata
       set_fact:
-        kubeapp_patch_metadata: "{{ kubeapp_definition.metadata|combine({'name': kubeapp_most_recent_resource.metadata.name}) }}"
+        kubeapp_patch_metadata: "{{ kubeapp_resource.metadata|combine({'name': kubeapp_most_recent_resource.metadata.name}) }}"
 
     - name: set patch test object
       set_fact:
-        kubeapp_patch_test: "{{ kubeapp_definition|combine({'metadata': kubeapp_patch_metadata}) }}"
-      no_log: "{{ resource_type == 'Secret' }}"
+        kubeapp_patch_test: "{{ kubeapp_resource|combine({'metadata': kubeapp_patch_metadata}) }}"
+      #no_log: "{{ kubeapp_resource_type == 'Secret' }}"
 
     - name: attempt patching most recent resource
       k8s:
         definition: "{{ kubeapp_patch_test }}"
       check_mode: yes
       register: kubeapp_patch
-      no_log: "{{ resource_type == 'Secret' }}"
+      #no_log: "{{ kubeapp_resource_type == 'Secret' }}"
 
     - name: double check that if resource has changed, then name has changed
       assert:
-        msg: "{{ resource_type }} definition differs but {{ resource_type }} name remains unchanged - has the resource been committed?"
+        msg: "{{ kubeapp_resource_type }} definition differs but {{ kubeapp_resource_type }} name remains unchanged - has the resource been committed?"
         that:
-          - kubeapp_most_recent_resource.metadata.name != kubeapp_definition.metadata.name
+          - kubeapp_most_recent_resource.metadata.name != kubeapp_resource.metadata.name
       when: kubeapp_patch is changed
   when: kubeapp_existing_resources
 
 - name: apply resources
   k8s:
-    definition: "{{ kubeapp_definition }}"
+    definition: "{{ kubeapp_resource }}"
   when: not kubeapp_existing_resources or kubeapp_patch is changed
-  no_log: "{{ resource_type == 'Secret' }}"
+  #no_log: "{{ kubeapp_resource_type == 'Secret' }}"
