@@ -5,7 +5,6 @@ metadata:
   namespace: default
   labels:
     prefix: a-configmap
-type: Opaque
 data:
   HELLO: world
   THIS: is a good var
