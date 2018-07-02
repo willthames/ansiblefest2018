@@ -1,6 +1,4 @@
 - include_tasks: resource.yml
-  loop: "{{ kubeapp_resources.definitions }}"
-  var:
-    git_version: "{{ kubeapp_resources.git_version }}"
+  loop: "{{ kubeapp_resources }}"
   loop_control:
     loop_var: kubeapp_resource

@@ -19,5 +19,6 @@ layers:
         - test
         - prod
     application:
-        - docker_debug
+        - docker-debug-versioned
+        - docker-debug-unversioned
         - api

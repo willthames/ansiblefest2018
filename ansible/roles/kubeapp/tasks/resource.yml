@@ -10,11 +10,18 @@
 
 - name: find existing resource
   set_fact:
-    kubeapp_existing_resources: "{{ query('k8s', kind=kubeapp_resource_type, name=kubeapp_resource.metadata.name) }}"
+    kubeapp_existing_resources: "{{ query('k8s', kind=kubeapp_resource_type, resource_name=kubeapp_resource.metadata.name) }}"
   when: kubeapp_prefix_label not in kubeapp_resource.metadata.labels|default({})
   #no_log: "{{ kubeapp_resource_type == 'Secret' }}"
 
 - block:
+    - name: ensure namespace exists
+      k8s:
+        api_version: v1
+        kind: Namespace
+        name: "{{ kubeapp_resource.metadata.namespace }}"
+        state: present
+
     - name: find most recent resource
       set_fact:
         kubeapp_most_recent_resource: "{{ kubeapp_existing_resources|last }}"

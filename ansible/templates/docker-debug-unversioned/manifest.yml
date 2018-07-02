@@ -1,51 +1,53 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: docker-debug
-  namespace: default
+  name: {{ application }}
+  namespace: {{ env }}
   labels:
-    app: docker_debug
-    version: {{ git_version }}
+    app: {{ application }}
+    version: {{ version }}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: docker_debug
+      app: {{ application }}
   template:
     metadata:
       labels:
-        app: docker_debug
-        version: {{ git_version }}
+        app: {{ application }}
+        version: {{ version }}
     spec:
       containers:
-        - name: docker_debug
-          image: docker_debug:1
+        - name: {{ application }}
+          image: {{ (container_registry is defined)|ternary(container_registry|default() + "/", "") }}{{ container_image }}:{{ container_tag }}
+          imagePullPolicy: {{ image_pull_policy }}
           ports:
-            - containerPort: 8080
+            - containerPort: 5000
           env:
             - name: AN_ENV_VAR
               valueFrom:
                 secretKeyRef:
-                  name: {{ (lookup('k8s', kind='Secret', label_selectors='prefix=a-secret') | last).metadata.name }}
+                  name: a-secret
                   key: AN_ENV_VAR
           envFrom:
             - configMapRef:
-                name: {{ (lookup('k8s', kind='ConfigMap', label_selectors='prefix=a-configmap') | last).metadata.name }}
+                name: a-configmap
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: docker_debug
-  namespace: default
+  name: {{ application }}
+  namespace: {{ env }}
 spec:
   ports:
   - port: 8080 # the port that this service should serve on
     # the container on each pod to connect to, can be a name
     # (e.g. 'www') or a number (e.g. 80)
-    targetPort: 8080
+    targetPort: 5000
     protocol: TCP
   # just like the selector in the deployment,
   # but this time it identifies the set of pods to load balance
   # traffic to.
   selector:
-    app: docker_debug
+    app: {{ application }}
+  type: LoadBalancer

@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ application }}
+  namespace: {{ env }}
+  labels:
+    app: {{ application }}
+    version: {{ version }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ application }}
+  template:
+    metadata:
+      labels:
+        app: {{ application }}
+        version: {{ version }}
+    spec:
+      containers:
+        - name: {{ application }}
+          image: {{ container_registry|default()|ternary(container_registry + "/", "") }}{{ container_image }}:{{ container_tag }}
+          imagePullPolicy: {{ image_pull_policy }}
+          ports:
+            - containerPort: 5000
+          env:
+            - name: AN_ENV_VAR
+              valueFrom:
+                secretKeyRef:
+                  name: {{ (query('k8s', kind='Secret', label_selectors='prefix=a-secret') | last).metadata.name }}
+                  key: AN_ENV_VAR
+          envFrom:
+            - configMapRef:
+                name: {{ (query('k8s', kind='ConfigMap', label_selectors='prefix=a-configmap') | last).metadata.name }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ application }}
+  namespace: default
+spec:
+  ports:
+  - port: 8080 # the port that this service should serve on
+    # the container on each pod to connect to, can be a name
+    # (e.g. 'www') or a number (e.g. 80)
+    targetPort: 5000
+    protocol: TCP
+  # just like the selector in the deployment,
+  # but this time it identifies the set of pods to load balance
+  # traffic to.
+  selector:
+    app: {{ application }}
+  type: LoadBalancer

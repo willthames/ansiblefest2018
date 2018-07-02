@@ -6,26 +6,20 @@
 - name: create secrets list
   set_fact:
     kubeapp_secrets: >
-      {{ kubeapp_secrets + [{'git_version': lookup('pipe', 'git describe --long --first-parent $(git log -n1 --pretty=format:%H ' + item + ')'),
-                             'definitions': lookup('template', item,
-                                                   template_vars={'git_version': lookup('pipe', 'git describe --long --first-parent $(git log -n1 --pretty=format:%H ' + item + ')')}
-                                                  ).split('---')|map('from_yaml')|list}] }}
+      {{ kubeapp_secrets + (lookup('template', item).split('---')|select('ne', None)|map('from_yaml')|list) }}
   loop: "{{ query('fileglob', 'templates/' + application + '/*secrets.yml') }}"
-  no_log: yes
+  # no_log: yes
 
 - name: create config list
   set_fact:
     kubeapp_config_manifests: >
-      {{ kubeapp_config_manifests + [{'git_version': lookup('pipe', 'git describe --long --first-parent $(git log -n1 --pretty=format:%H ' + item + ')'),
-                                      'definitions': lookup('template', item,
-                                                            template_vars={'git_version': lookup('pipe', 'git describe --long --first-parent $(git log -n1 --pretty=format:%H ' + item + ')')}
-                                                           ).split('---')|map('from_yaml')|list}] }}
+      {{ kubeapp_config_manifests + lookup('template', item).split('---')|select('ne', None)|map('from_yaml')|list }}
   loop: >
     {{ query('fileglob', 'templates/' + application + '/*configmap.yml')|sort +
        query('fileglob', 'templates/' + application + '/*manifest.yml')|sort }}
 
 - name: apply all resource definitions in order
-  include_tasks: resources.yml
+  include_tasks: resource.yml
   loop: "{{ kubeapp_secrets + kubeapp_config_manifests }}"
   loop_control:
-    loop_var: kubeapp_resources
+    loop_var: kubeapp_resource

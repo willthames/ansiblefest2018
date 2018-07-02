@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: a-configmap
+  namespace: {{ env }}
+  labels:
+    prefix: a-configmap
+data:
+  HELLO: world
+  THIS: is a good var
