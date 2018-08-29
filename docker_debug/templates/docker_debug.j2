@@ -1,22 +1,27 @@
 <!doctype html>
 <head>
 <title>Docker Debug</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='colour.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-<h1>Environment Variables</h1>
+<div class="header">
+<h1>docker debug</h1>
+</div>
+<h2>Environment Variables</h2>
+</div>
 <table>
 <thead>
 <tr><th>Environment Variable</th><th>Value</th></tr>
 </thead>
 <tbody>
-{% for environ in environs %}
-<tr><td><code>{{ environ }}</code></td><td><code>{{ environs[environ] }}</code></td></tr>
+{% for item in environs | dictsort %}
+<tr><td><code>{{ item.0 }}</code></td><td><code>{{ item.1 }}</code></td></tr>
 {%- endfor %}
 </tbody>
 </table>
 
-<h1>Configuration File Contents</h1>
+<h2>Configuration File Contents</h2>
 
 The contents of the file with name <code>WWW_DATA</code> environment variable are
 

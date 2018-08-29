@@ -7,7 +7,7 @@ WORKDIR /app
 COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt
 USER 1000
-COPY static static
 COPY templates templates
 COPY server.py server.py
 COPY helloworld.txt helloworld.txt
+COPY static static
