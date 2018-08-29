@@ -1,0 +1,54 @@
+- name: remove EKS cluster
+  aws_eks_cluster:
+    name: "{{ eks_cluster_name }}"
+    state: absent
+    region: "{{ eks_region }}"
+  register: eks_delete
+
+- pause:
+    minutes: 5
+  when: eks_delete is changed
+
+- name: get VPC id
+  ec2_vpc_net_facts:
+    filters:
+      tag:Name: "{{ eks_vpc_name }}"
+    region: "{{ eks_region }}"
+  register: eks_vpc_facts
+
+- name: set all security group rule lists to empty to remove circular dependency
+  ec2_group:
+    name: "{{ item.name }}"
+    description: "{{ item.description }}"
+    state: present
+    rules: []
+    rules_egress: []
+    purge_rules: yes
+    purge_rules_egress: yes
+    vpc_id: '{{ eks_vpc_facts.vpcs[0].vpc_id }}'
+    region: "{{ eks_region }}"
+  loop: "{{ eks_security_groups }}"
+
+- name: remove security groups
+  ec2_group:
+    name: '{{ item.name }}'
+    state: absent
+    vpc_id: '{{ eks_vpc_facts.vpcs[0].vpc_id }}'
+    region: "{{ eks_region }}"
+  loop: "{{ eks_security_groups }}"
+
+- name: remove setup subnet
+  ec2_vpc_subnet:
+    az: '{{ eks_region }}{{ item.zone }}'
+    vpc_id: '{{ eks_vpc_facts.vpcs[0].vpc_id }}'
+    cidr: "{{ item.cidr}}"
+    state: absent
+    region: "{{ eks_region }}"
+  loop: "{{ eks_subnets }}"
+
+- name: remove setup VPC
+  ec2_vpc_net:
+    cidr_block: "{{ eks_vpc_cidr }}"
+    state: absent
+    name: "{{ eks_vpc_name }}"
+    region: "{{ eks_region }}"

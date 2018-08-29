@@ -1,0 +1,124 @@
+- name: ensure AWS keypair exists
+  ec2_key:
+    name: "{{ eks_cluster_name }}"
+    key_material: "{{ lookup('file', '~/.ssh/' + eks_key_file + '.pub') }}"
+    region: "{{ eks_region }}"
+
+- name: ensure EKS service role exists
+  iam_role:
+    name: "{{ eks_cluster_role_name }}"
+    managed_policies:
+      - AmazonEKSClusterPolicy
+      - AmazonEKSServicePolicy
+    assume_role_policy_document: "{{ lookup('file', 'eks-trust-policy.json') }}"
+  register: eks_cluster_iam_role
+
+- name: ensure IAM worker node role exists
+  iam_role:
+    name: "{{ eks_worker_role_name }}"
+    managed_policies:
+      - AmazonEKSWorkerNodePolicy
+      - AmazonEKS_CNI_Policy
+      - AmazonEC2ContainerRegistryReadOnly
+    assume_role_policy_document: "{{ lookup('file', 'ec2-trust-policy.json') }}"
+  register: eks_worker_iam_role
+
+- name: ensure VPC exists
+  ec2_vpc_net:
+    name: "{{ eks_vpc_name }}"
+    cidr_block: "{{ eks_vpc_cidr }}"
+    region: "{{ eks_region }}"
+  register: eks_vpc_results
+
+- name: ensure subnets exisst
+  ec2_vpc_subnet:
+    vpc_id: "{{ eks_vpc_results.vpc.id }}"
+    az: "{{ eks_region}}{{ item.zone }}"
+    cidr: "{{ item.cidr }}"
+    tags:
+      Name: "eks-subnet-{{ item.zone }}"
+    region: "{{ eks_region }}"
+  register: eks_subnet_results
+  loop: "{{ eks_subnets }}"
+
+- name: ensure security groups exist
+  ec2_group:
+    name: "{{ item.name }}"
+    description: "{{ item.description }}"
+    state: present
+    rules: "{{ item.rules }}"
+    rules_egress: "{{ item.rules_egress|default(omit) }}"
+    vpc_id: '{{ eks_vpc_results.vpc.id }}'
+    region: "{{ eks_region }}"
+  with_items: "{{ eks_security_groups }}"
+  register: eks_security_group_results
+
+- name: ensure EKS cluster exists
+  aws_eks_cluster:
+    name: "{{ eks_cluster_name }}"
+    security_groups: "{{ eks_security_groups | json_query('[].name') }}"
+    subnets: "{{ eks_subnet_results.results | json_query('[].subnet.id') }}"
+    role_arn: "{{ eks_cluster_iam_role.arn }}"
+    region: "{{ eks_region }}"
+    wait: yes
+  register: eks_create
+
+- name: output kube config
+  template:
+    src: kube.config.j2
+    dest: "{{ eks_kubeconfig }}"
+
+- name: check kubeconfig works!
+  k8s_facts:
+    api_version: v1
+    kind: Namespace
+    kubeconfig: "{{ eks_kubeconfig }}"
+
+- name: ensure lifecycle hook exists
+  ec2_asg_lifecycle_hook:
+    state: present
+    autoscaling_group_name: "{{ eks_asg_name }}"
+    lifecycle_hook_name: "{{ eks_lifecycle_hook_name }}"
+    transition: autoscaling:EC2_INSTANCE_LAUNCHING
+    heartbeat_timeout: 3600
+    default_result: ABANDON
+    region: "{{ eks_region }}"
+  register: "{{ eks_lifecycle_hook }}"
+
+- name: set LC arguments fact
+  set_fact:
+    ec2_lc_args: &ec2_lc_args
+      associate_public_ip: yes
+      instance_profile: "{{ eks_worker_iam_role.arn }}"
+      image_id: "{{ eks_ami_id }}"
+      instance_type: "{{ eks_instance_type }}"
+      key_name: "{{ eks_key_pair }}"
+      security_groups: "{{ eks_security_groups | json_query('[].name') }}"
+      user_data: "{{ lookup('template', 'user_data.j2') }}"
+      region: "{{ eks_region }}"
+
+- name: create LC group name
+  set_fact:
+    eks_ec2_lc_name: "{{ eks_cluster_name }}-{{ (ec2_lc_args | to_nice_yaml | md5)[:10] }}"
+
+- name: ensure launch configuration exists
+  ec2_lc:
+    name: "{{ eks_ecs_lc_name }}"
+    <<: *ec2_lc_args
+
+- name: set eks node tags
+  set_fact:
+    eks_asg_tags: "{{ eks_asg_tags|default({})|combine({ 'kubernetes.io/cluster/' + eks_cluster_name: 'owned' }) }}"
+
+
+- name: ensure autoscaling group exists
+  ec2_asg:
+    name: "{{ eks_cluster_name }}-nodes"
+    subnets: "{{ eks_subnet_results.results | json_query('[].subnet.id') }}"
+    desired_capacity: "{{ eks_desired_capacity }}"
+    min_size: "{{ eks_desired_capacity }}"
+    max_size: "{{ eks_desired_capacity }}"
+    launch_configuration_name: "{{ eks_ecs_lc_args }}"
+    vpc_id: '{{ eks_vpc_results.vpc.id }}'
+    tags: "{{ eks_asg_tags }}"
+    region: "{{ eks_region }}"

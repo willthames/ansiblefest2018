@@ -1,0 +1,52 @@
+eks_cluster_name: ansiblefest2018
+eks_key_file: "{{ eks_cluster_name }}"
+eks_region: us-west-2
+eks_vpc_cidr: 10.123.0.0/16
+eks_vpc_name: aws_eks_vpc
+
+eks_kubeconfig: ~/.kube/{{ eks_cluster_name }}.config
+eks_ami_id: ami-08cab282f9979fc7a
+eks_instance_type: t3.small
+eks_min_size: 3
+eks_max_size: 3
+eks_desired_capacity: 3
+eks_asg_name: "{{ eks_cluster_name }}-nodes"
+eks_lc_name: "{{ eks_cluster_name }}-nodes"
+eks_lifecycle_hook_name: "{{ eks_cluster_name }}-nodes-lifecycle-hook"
+eks_worker_role_name: eksWorkerRole
+eks_cluster_role_name: eksClusterRole
+eks_kubeconfig_env: []
+eks_action: setup
+
+eks_subnets:
+  - cidr: 10.123.1.0/24
+    zone: a
+  - cidr: 10.123.2.0/24
+    zone: b
+  - cidr: 10.123.3.0/24
+    zone: c
+
+eks_security_groups:
+  - name: "{{ eks_cluster_name }}-control-plane-sg"
+    description: "EKS Control Plane Security Group"
+    rules:
+      - group_name: "{{ eks_cluster_name }}-workers-sg"
+        group_desc: "EKS Worker Security Group"
+        ports: 443
+        proto: tcp
+    rules_egress:
+      - group_name: "{{ eks_cluster_name }}-workers-sg"
+        group_desc: "EKS Worker Security Group"
+        from_port: 1025
+        to_port: 65535
+        proto: tcp
+  - name: "{{ eks_cluster_name }}-workers-sg"
+    description: "EKS Worker Security Group"
+    rules:
+      - group_name: "{{ eks_cluster_name }}-workers-sg"
+        proto: tcp
+        from_port: 1
+        to_port: 65535
+      - group_name: "{{ eks_cluster_name }}-control-plane-sg"
+        ports: 10250
+        proto: tcp
