@@ -2,10 +2,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ application }}
-  namespace: {{ env }}
+  namespace: {{ kuberesource_namespace }}
   labels:
     app: {{ application }}
-    version: {{ version }}
 spec:
   replicas: 1
   selector:
@@ -15,7 +14,6 @@ spec:
     metadata:
       labels:
         app: {{ application }}
-        version: {{ version }}
     spec:
       containers:
         - name: {{ application }}
@@ -27,17 +25,17 @@ spec:
             - name: AN_ENV_VAR
               valueFrom:
                 secretKeyRef:
-                  name: {{ (query('k8s', kind='Secret', label_selectors='prefix=a-secret') | last).metadata.name }}
+                  name: {{ (kuberesource_secrets['a-secrets']) | k8s_config_resource_name }}
                   key: AN_ENV_VAR
           envFrom:
             - configMapRef:
-                name: {{ (query('k8s', kind='ConfigMap', label_selectors='prefix=a-configmap') | last).metadata.name }}
+                name: {{ (kuberesource_configmaps['a-configmap']) | k8s_config_resource_name }}
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: {{ application }}
-  namespace: default
+  namespace: {{ kuberesource_namespace }}
 spec:
   ports:
   - port: 8080 # the port that this service should serve on

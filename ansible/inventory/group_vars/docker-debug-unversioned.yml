@@ -1,3 +1,4 @@
 container_image: docker_debug
 container_tag: v0.1
 image_pull_policy: Never
+kubeapp_namespace: "{{ env }}"

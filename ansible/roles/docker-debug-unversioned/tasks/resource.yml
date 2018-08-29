@@ -14,14 +14,14 @@
   when: kubeapp_prefix_label not in kubeapp_resource.metadata.labels|default({})
   #no_log: "{{ kubeapp_resource_type == 'Secret' }}"
 
-- block:
-    - name: ensure namespace exists
-      k8s:
-        api_version: v1
-        kind: Namespace
-        name: "{{ kubeapp_resource.metadata.namespace }}"
-        state: present
+- name: ensure namespace exists
+  k8s:
+    api_version: v1
+    kind: Namespace
+    name: "{{ kubeapp_resource.metadata.namespace }}"
+    state: present
 
+- block:
     - name: find most recent resource
       set_fact:
         kubeapp_most_recent_resource: "{{ kubeapp_existing_resources|last }}"
@@ -39,6 +39,9 @@
     - name: attempt patching most recent resource
       k8s:
         definition: "{{ kubeapp_patch_test }}"
+        merge_type:
+          - strategic-merge
+          - merge
       check_mode: yes
       register: kubeapp_patch
       #no_log: "{{ kubeapp_resource_type == 'Secret' }}"

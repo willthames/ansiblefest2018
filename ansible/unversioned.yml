@@ -1,0 +1,4 @@
+- hosts: "{{ application }}-{{ env }}-runner"
+  tasks:
+    - include_role:
+        name: "{{ application }}"

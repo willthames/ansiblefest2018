@@ -1,5 +1,0 @@
-- hosts: "{{ application }}-{{ env }}-runner"
-  vars:
-    version: "{{ lookup('pipe', 'git describe --long') }}"
-  roles:
-    - kubeapp
