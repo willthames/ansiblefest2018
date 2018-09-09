@@ -1,0 +1,6 @@
+boto
+boto3
+botocore
+git+https://github.com/willthames/python@update_python_base
+git+https://github.com/willthames/openshift-restclient-python@loosen_kubernetes_restriction
+git+https://github.com/ansible/ansible@stable-2.7
