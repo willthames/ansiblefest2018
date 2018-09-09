@@ -32,6 +32,12 @@ except ImportError:
     # Exceptions handled in common
     pass
 
+try:
+    from openshift.helper.hashes import generate_hash
+    HAS_K8S_CONFIG_HASH = True
+except ImportError:
+    HAS_K8S_CONFIG_HASH = False
+
 
 class KubernetesRawModule(KubernetesAnsibleModule):
 
@@ -62,9 +68,8 @@ class KubernetesRawModule(KubernetesAnsibleModule):
         resource_definition = self.params.get('resource_definition')
         self.append_hash = self.params.get('append_hash')
         if self.append_hash:
-            from distutils.version import LooseVersion
-            if LooseVersion(self.openshift_version) < LooseVersion("0.6.3"):
-                self.fail_json(msg="openshift >= 0.6.3 is required for append_hash")
+            if not HAS_K8S_CONFIG_HASH:
+                self.fail_json(msg="openshift >= 0.7.1 is required for append_hash")
         if resource_definition:
             if isinstance(resource_definition, string_types):
                 try:
@@ -143,9 +148,11 @@ class KubernetesRawModule(KubernetesAnsibleModule):
             return result
 
         try:
+            # ignore append_hash for resources other than ConfigMap and Secret
+            if self.append_hash and definition['kind'] in ['ConfigMap', 'Secret']:
+                name = '%s-%s' % (name, generate_hash(definition))
+                definition['metadata']['name'] = name
             params = dict(name=name, namespace=namespace)
-            if self.append_hash:
-                params.update(dict(append_hash=True, body=definition))
             existing = resource.get(**params)
         except NotFoundError:
             pass
@@ -180,7 +187,7 @@ class KubernetesRawModule(KubernetesAnsibleModule):
                     k8s_obj = definition
                 else:
                     try:
-                        k8s_obj = resource.create(definition, namespace=namespace, append_hash=self.append_hash).to_dict()
+                        k8s_obj = resource.create(definition, namespace=namespace).to_dict()
                     except ConflictError:
                         # Some resources, like ProjectRequests, can't be created multiple times,
                         # because the resources that they create don't match their kind
@@ -245,8 +252,6 @@ class KubernetesRawModule(KubernetesAnsibleModule):
     def patch_resource(self, resource, definition, existing, name, namespace, merge_type=None):
         try:
             params = dict(name=name, namespace=namespace)
-            if self.append_hash:
-                params['append_hash'] = self.append_hash
             if merge_type:
                 params['content_type'] = 'application/{0}-patch+json'.format(merge_type)
             k8s_obj = resource.patch(definition, **params).to_dict()
