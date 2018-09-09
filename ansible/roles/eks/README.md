@@ -15,10 +15,11 @@ aws iam create-service-linked-role --aws-service-name=eks.amazonaws.com
 ### key pair
 
 Reasonable defaults are set for most values but in particular, the file
-`~/.ssh/{{ eks_key_pair }}.pub` must exist. `eks_key_pair` defaults to
-`eks_cluster_name` which defaults to `ansiblefest2018`. Either create
-an ssh key pair to match these defaults or change the value of `eks_key_pair`
-to match an existing key.
+`~/.ssh/{{ eks_key_file }}.pub` must exist. `eks_key_file` defaults to
+the value of `eks_cluster_name`, by default `ansiblefest2018`. Either create
+an ssh key pair to match these defaults or change the value of `eks_key_file`
+to match an existing key. This file is then used to create a key called
+`eks_key_name`, which defaults to the value of `eks_key_file`.
 
 ### botocore
 

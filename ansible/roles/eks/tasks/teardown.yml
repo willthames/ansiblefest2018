@@ -16,6 +16,20 @@
     region: "{{ eks_region }}"
   register: eks_vpc_facts
 
+- name: remove route table
+  ec2_vpc_route_table:
+    vpc_id: '{{ eks_vpc_facts.vpcs[0].vpc_id }}'
+    region: "{{ eks_region }}"
+    tags:
+      Name: Public
+    state: absent
+
+- name: remove igw
+  ec2_vpc_igw:
+    vpc_id: '{{ eks_vpc_facts.vpcs[0].vpc_id }}'
+    region: "{{ eks_region }}"
+    state: absent
+
 - name: set all security group rule lists to empty to remove circular dependency
   ec2_group:
     name: "{{ item.name }}"

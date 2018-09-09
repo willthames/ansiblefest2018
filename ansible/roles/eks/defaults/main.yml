@@ -1,4 +1,5 @@
 eks_cluster_name: ansiblefest2018
+eks_key_name: "{{ eks_key_file }}"
 eks_key_file: "{{ eks_cluster_name }}"
 eks_region: us-west-2
 eks_vpc_cidr: 10.123.0.0/16
@@ -17,6 +18,7 @@ eks_worker_role_name: eksWorkerRole
 eks_cluster_role_name: eksClusterRole
 eks_kubeconfig_env: []
 eks_action: setup
+eks_bootstrap_arguments: ""
 
 eks_subnets:
   - cidr: 10.123.1.0/24
@@ -50,3 +52,6 @@ eks_security_groups:
       - group_name: "{{ eks_cluster_name }}-control-plane-sg"
         ports: 10250
         proto: tcp
+      - ports: 22
+        proto: tcp
+        cidr_ip: 0.0.0.0/0

@@ -1,1 +1,1 @@
-- include_tasks: "{{ action }}.yml"
+- include_tasks: "{{ eks_action }}.yml"

@@ -1,6 +1,6 @@
 - name: ensure AWS keypair exists
   ec2_key:
-    name: "{{ eks_cluster_name }}"
+    name: "{{ eks_key_name }}"
     key_material: "{{ lookup('file', '~/.ssh/' + eks_key_file + '.pub') }}"
     region: "{{ eks_region }}"
 
@@ -13,6 +13,11 @@
     assume_role_policy_document: "{{ lookup('file', 'eks-trust-policy.json') }}"
   register: eks_cluster_iam_role
 
+- name: create managed policy for additional EKS Worker permissions
+  iam_managed_policy:
+    policy_name: "EKSWorkerAdditionalPolicy"
+    policy: "{{ lookup('file', 'eks-worker-additional-policy.json') }}"
+
 - name: ensure IAM worker node role exists
   iam_role:
     name: "{{ eks_worker_role_name }}"
@@ -20,6 +25,7 @@
       - AmazonEKSWorkerNodePolicy
       - AmazonEKS_CNI_Policy
       - AmazonEC2ContainerRegistryReadOnly
+      - EKSWorkerAdditionalPolicy
     assume_role_policy_document: "{{ lookup('file', 'ec2-trust-policy.json') }}"
   register: eks_worker_iam_role
 
@@ -40,6 +46,24 @@
     region: "{{ eks_region }}"
   register: eks_subnet_results
   loop: "{{ eks_subnets }}"
+
+- name: ensure igw exists
+  ec2_vpc_igw:
+    vpc_id: "{{ eks_vpc_results.vpc.id }}"
+    region: "{{ eks_region }}"
+    state: present
+  register: eks_vpc_igw
+
+- name: create public route table
+  ec2_vpc_route_table:
+    vpc_id: "{{ eks_vpc_results.vpc.id }}"
+    region: "{{ eks_region }}"
+    tags:
+      Name: Public
+    subnets: "{{ eks_subnet_results.results | json_query('[].subnet.id') }}"
+    routes:
+      - dest: 0.0.0.0/0
+        gateway_id: "{{ eks_vpc_igw.gateway_id }}"
 
 - name: ensure security groups exist
   ec2_group:
@@ -74,6 +98,49 @@
     kind: Namespace
     kubeconfig: "{{ eks_kubeconfig }}"
 
+- name: set LC arguments fact
+  set_fact:
+    ec2_lc_args: &ec2_lc_args
+      assign_public_ip: yes
+      instance_profile_name: "{{ eks_worker_role_name }}"
+      image_id: "{{ eks_ami_id }}"
+      instance_type: "{{ eks_instance_type }}"
+      key_name: "{{ eks_key_name }}"
+      security_groups: "{{ eks_security_groups | json_query('[].name') }}"
+      user_data: "{{ lookup('template', 'user_data.j2') }}"
+      region: "{{ eks_region }}"
+      state: present
+
+- debug:
+    msg: "{{ ec2_lc_args | to_nice_yaml }} {{ (ec2_lc_args | to_nice_yaml) | md5 }}"
+
+- name: create LC group name
+  set_fact:
+    eks_ec2_lc_name: "{{ eks_cluster_name }}-{{ (ec2_lc_args | to_nice_yaml | md5)[:10] }}"
+
+- name: ensure launch configuration exists
+  ec2_lc:
+    name: "{{ eks_ec2_lc_name }}"
+    <<: *ec2_lc_args
+
+- name: set eks node tags
+  set_fact:
+    eks_asg_tags: >
+      {{ eks_asg_tags|default([]) + [{'kubernetes.io/cluster/' + eks_cluster_name: 'owned',
+                                     'propagate_at_launch': 'true'}] }}
+
+- name: ensure autoscaling group exists
+  ec2_asg:
+    name: "{{ eks_cluster_name }}-nodes"
+    vpc_zone_identifier: "{{ eks_subnet_results.results | json_query('[].subnet.id') }}"
+    desired_capacity: "{{ eks_desired_capacity }}"
+    min_size: "{{ eks_desired_capacity }}"
+    max_size: "{{ eks_desired_capacity }}"
+    launch_config_name: "{{ eks_ec2_lc_name }}"
+    tags: "{{ eks_asg_tags }}"
+    region: "{{ eks_region }}"
+    replace_all_instances: yes
+
 - name: ensure lifecycle hook exists
   ec2_asg_lifecycle_hook:
     state: present
@@ -83,42 +150,4 @@
     heartbeat_timeout: 3600
     default_result: ABANDON
     region: "{{ eks_region }}"
-  register: "{{ eks_lifecycle_hook }}"
-
-- name: set LC arguments fact
-  set_fact:
-    ec2_lc_args: &ec2_lc_args
-      associate_public_ip: yes
-      instance_profile: "{{ eks_worker_iam_role.arn }}"
-      image_id: "{{ eks_ami_id }}"
-      instance_type: "{{ eks_instance_type }}"
-      key_name: "{{ eks_key_pair }}"
-      security_groups: "{{ eks_security_groups | json_query('[].name') }}"
-      user_data: "{{ lookup('template', 'user_data.j2') }}"
-      region: "{{ eks_region }}"
-
-- name: create LC group name
-  set_fact:
-    eks_ec2_lc_name: "{{ eks_cluster_name }}-{{ (ec2_lc_args | to_nice_yaml | md5)[:10] }}"
-
-- name: ensure launch configuration exists
-  ec2_lc:
-    name: "{{ eks_ecs_lc_name }}"
-    <<: *ec2_lc_args
-
-- name: set eks node tags
-  set_fact:
-    eks_asg_tags: "{{ eks_asg_tags|default({})|combine({ 'kubernetes.io/cluster/' + eks_cluster_name: 'owned' }) }}"
-
-
-- name: ensure autoscaling group exists
-  ec2_asg:
-    name: "{{ eks_cluster_name }}-nodes"
-    subnets: "{{ eks_subnet_results.results | json_query('[].subnet.id') }}"
-    desired_capacity: "{{ eks_desired_capacity }}"
-    min_size: "{{ eks_desired_capacity }}"
-    max_size: "{{ eks_desired_capacity }}"
-    launch_configuration_name: "{{ eks_ecs_lc_args }}"
-    vpc_id: '{{ eks_vpc_results.vpc.id }}'
-    tags: "{{ eks_asg_tags }}"
-    region: "{{ eks_region }}"
+  register: eks_lifecycle_hook
