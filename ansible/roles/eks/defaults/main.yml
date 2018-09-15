@@ -7,7 +7,8 @@ eks_vpc_name: aws_eks_vpc
 
 eks_kubeconfig: ~/.kube/{{ eks_cluster_name }}.config
 eks_ami_id: ami-08cab282f9979fc7a
-eks_instance_type: t3.small
+# T3s are unsupported until aws/amazon-vpc-cni-k8s is updated to 1.2.0
+eks_instance_type: t2.small
 eks_min_size: 3
 eks_max_size: 3
 eks_desired_capacity: 3

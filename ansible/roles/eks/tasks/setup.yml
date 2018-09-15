@@ -92,10 +92,9 @@
     src: kube.config.j2
     dest: "{{ eks_kubeconfig }}"
 
-- name: check kubeconfig works!
-  k8s_facts:
-    api_version: v1
-    kind: Namespace
+- name: add authentication configuration
+  k8s:
+    definition: "{{ lookup('template', role_path + '/templates/aws-auth-cm.yml') }}"
     kubeconfig: "{{ eks_kubeconfig }}"
 
 - name: set LC arguments fact
@@ -151,3 +150,9 @@
     default_result: ABANDON
     region: "{{ eks_region }}"
   register: eks_lifecycle_hook
+
+- name: write helpful message
+  debug:
+    msg: >
+      {{ eks_cluster_name }} kubernetes cluster setup complete. Use K8S_AUTH_KUBECONFIG={{ eks_kubeconfig }}
+      with ansible-playbook to use this cluster

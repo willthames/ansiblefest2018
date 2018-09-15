@@ -1,9 +1,11 @@
 #!/bin/bash
 set -o xtrace
+
 /etc/eks/bootstrap.sh {{ eks_cluster_name }} {{ eks_bootstrap_arguments }}
 
 aws autoscaling complete-lifecycle-action \
   --lifecycle-action-result CONTINUE \
   --lifecycle-hook-name {{ eks_lifecycle_hook_name }} \
   --auto-scaling-group-name {{ eks_asg_name }} \
-  --instance-id `ec2-metadata --instance-id`
+  --instance-id `ec2-metadata --instance-id | awk '{print $2}'` \
+  --region {{ eks_region }}
