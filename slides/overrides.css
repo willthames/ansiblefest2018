@@ -1,0 +1,8 @@
+.reveal li { margin: 10px 0 !important; }
+.reveal figcaption { display: none !important; }
+.reveal p, .reveal ul { text-align: left;}
+.reveal ul { width: 90% }
+.reveal pre code { font-size: 24px; line-height: 1.2; }
+.reveal h1 { text-transform: none !important; }
+.reveal h1 code { font-weight: normal; letter-spacing: 0.8 }
+.reveal code { font-family: Source Code Pro,Monaco,monospace !important; }
