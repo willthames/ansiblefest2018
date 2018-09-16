@@ -1,35 +1,3 @@
-- name: ensure namespace exists
-  k8s:
-    api_version: v1
-    kind: Namespace
-    name: "{{ kubeapp_namespace }}"
-    state: present
-
-- name: empty manifest and secret lists (important if role is run twice!)
+- name: Source application role
   set_fact:
-    kubeapp_secrets: []
-    kubeapp_config_manifests: []
-
-- name: create secrets list
-  set_fact:
-    kubeapp_secrets: >
-      {{ kubeapp_secrets + lookup('template', item)|from_yaml_all|list }}
-  loop: "{{ query('fileglob', 'templates/' + application + '/*secrets.yml') }}"
-  # no_log: yes
-
-- name: create config list
-  set_fact:
-    kubeapp_config_manifests: >
-      {{ kubeapp_config_manifests + lookup('template', item)|from_yaml_all|list }}
-  loop: >
-    {{ query('fileglob', 'templates/' + application + '/*configmap.yml')|sort +
-       query('fileglob', 'templates/' + application + '/*manifest.yml')|sort }}
-
-- name: apply all resource definitions in order
-  k8s:
-    definition: "{{ item }}"
-  loop: "{{ kubeapp_config_manifests }}"
-
-- name: apply all resource definitions in order
-  k8s:
-    definition: "{{ kubeapp_config_manifests }}"
+    kube_resource_template_dir: "{{ 'templates/' + application + '/' + version + '/' }}"

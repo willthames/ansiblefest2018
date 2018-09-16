@@ -4,4 +4,4 @@
         name: "{{ application }}"
         public: yes
     - include_role:
-        name: "kuberesource"
+        name: "kube_resource"

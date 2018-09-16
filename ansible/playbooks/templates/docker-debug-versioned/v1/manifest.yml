@@ -2,10 +2,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ application }}
-  namespace: {{ env }}
+  namespace: {{ kube_resource_namespace }}
   labels:
     app: {{ application }}
-    version: {{ version }}
 spec:
   replicas: 1
   selector:
@@ -15,11 +14,11 @@ spec:
     metadata:
       labels:
         app: {{ application }}
-        version: {{ version }}
     spec:
       containers:
         - name: {{ application }}
-          image: {{ (container_registry is defined)|ternary(container_registry|default() + "/", "") }}{{ container_image }}:{{ container_tag }}
+          # we hard code the version to blue here but this would normally be a variable
+          image: {{ container_registry|default()|ternary(container_registry + "/", "") }}{{ container_image }}:blue
           imagePullPolicy: {{ image_pull_policy }}
           ports:
             - containerPort: 5000
@@ -27,17 +26,17 @@ spec:
             - name: AN_ENV_VAR
               valueFrom:
                 secretKeyRef:
-                  name: a-secret
+                  name: {{ (kube_resource_secrets['a-secrets']) | k8s_config_resource_name }}
                   key: AN_ENV_VAR
           envFrom:
             - configMapRef:
-                name: a-configmap
+                name: {{ (kube_resource_configmaps['a-configmap']) | k8s_config_resource_name }}
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: {{ application }}
-  namespace: {{ env }}
+  namespace: {{ kube_resource_namespace }}
 spec:
   ports:
   - port: 8080 # the port that this service should serve on

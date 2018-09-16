@@ -1,1 +1,4 @@
-kubeapp_prefix_label: prefix
+kube_resource_manifest_files: >
+  {{ query('fileglob', kube_resource_template_dir + '*configmap.yml') +
+     query('fileglob', kube_resource_template_dir + '*manifest.yml') }}
+kube_resource_secrets_files: "{{ query('fileglob', kube_resource_template_dir + '*secrets.yml') }}"

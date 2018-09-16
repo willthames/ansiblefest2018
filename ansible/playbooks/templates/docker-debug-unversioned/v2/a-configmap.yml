@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: a-configmap
-  namespace: {{ kuberesource_namespace }}
+  namespace: {{ env }}
   labels:
     prefix: a-configmap
 data:
