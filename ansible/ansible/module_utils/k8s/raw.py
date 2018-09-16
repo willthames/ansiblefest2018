@@ -24,10 +24,12 @@ from ansible.module_utils.six import string_types
 from ansible.module_utils.k8s.common import KubernetesAnsibleModule
 from ansible.module_utils.common.dict_transformations import dict_merge
 
+from distutils.version import LooseVersion
+
 
 try:
     import yaml
-    from openshift.dynamic.exceptions import DynamicApiError, NotFoundError, ConflictError, ForbiddenError
+    from openshift.dynamic.exceptions import DynamicApiError, NotFoundError, ConflictError, ForbiddenError, KubernetesValidateMissing
 except ImportError:
     # Exceptions handled in common
     pass
@@ -42,11 +44,20 @@ except ImportError:
 class KubernetesRawModule(KubernetesAnsibleModule):
 
     @property
+    def validate_spec(self):
+        return dict(
+            fail_on_error=dict(type='bool'),
+            version=dict(),
+            strict=dict(type='bool', default=True)
+        )
+
+    @property
     def argspec(self):
         argument_spec = copy.deepcopy(COMMON_ARG_SPEC)
         argument_spec.update(copy.deepcopy(AUTH_ARG_SPEC))
         argument_spec['merge_type'] = dict(type='list', choices=['json', 'merge', 'strategic-merge'])
         argument_spec['append_hash'] = dict(type='bool', default=False)
+        argument_spec['validate'] = dict(type='dict', default=None, options=self.validate_spec)
         return argument_spec
 
     def __init__(self, *args, **kwargs):
@@ -69,7 +80,13 @@ class KubernetesRawModule(KubernetesAnsibleModule):
         self.append_hash = self.params.get('append_hash')
         if self.append_hash:
             if not HAS_K8S_CONFIG_HASH:
-                self.fail_json(msg="openshift >= 0.7.1 is required for append_hash")
+                self.fail_json(msg="openshift >= 0.7.FIXME is required for append_hash")
+        if self.params['validate']:
+            if LooseVersion(self.openshift_version) < LooseVersion("0.7.0"):  # FIXME
+                self.fail_json(msg="openshift >= 0.7.FIXME is required for validate")
+        if self.params['merge_type']:
+            if LooseVersion(self.openshift_version) < LooseVersion("0.6.2"):
+                self.fail_json(msg="openshift >= 0.6.2 is required for merge_type")
         if resource_definition:
             if isinstance(resource_definition, string_types):
                 try:
@@ -106,7 +123,11 @@ class KubernetesRawModule(KubernetesAnsibleModule):
             api_version = definition.get('apiVersion', self.api_version)
             resource = self.find_resource(search_kind, api_version, fail=True)
             definition = self.set_defaults(resource, definition)
+            warnings = []
+            if self.params['validate'] is not None:
+                warnings = self.validate(definition)
             result = self.perform_action(resource, definition)
+            result['warnings'] = warnings
             changed = changed or result['changed']
             results.append(result)
 
@@ -119,6 +140,17 @@ class KubernetesRawModule(KubernetesAnsibleModule):
                 'results': results
             }
         })
+
+    def validate(self, resource):
+        try:
+            warnings, errors = self.client.validate(resource, self.params['validate'].get('version'), self.params['validate'].get('strict'))
+        except KubernetesValidateMissing:
+            self.fail_json(msg="kubernetes-validate python library is required to validate resources")
+
+        if errors and self.params['validate']['fail_on_error']:
+            self.fail_json(msg="\n".join(errors))
+        else:
+            return warnings + errors
 
     def set_defaults(self, resource, definition):
         definition['kind'] = resource.kind
@@ -226,18 +258,15 @@ class KubernetesRawModule(KubernetesAnsibleModule):
             if self.check_mode:
                 k8s_obj = dict_merge(existing.to_dict(), definition)
             else:
-                if self.params['merge_type']:
-                    from distutils.version import LooseVersion
-                    if LooseVersion(self.openshift_version) < LooseVersion("0.6.2"):
-                        self.fail_json(msg="openshift >= 0.6.2 is required for merge_type")
-                    for merge_type in self.params['merge_type']:
+                if LooseVersion(self.openshift_version) < LooseVersion("0.6.2"):
+                    k8s_obj, error = self.patch_resource(resource, definition, existing, name,
+                                                         namespace)
+                else:
+                    for merge_type in self.params['merge_type'] or ['strategic-merge', 'merge']:
                         k8s_obj, error = self.patch_resource(resource, definition, existing, name,
                                                              namespace, merge_type=merge_type)
                         if not error:
                             break
-                else:
-                    k8s_obj, error = self.patch_resource(resource, definition, existing, name,
-                                                         namespace)
                 if error:
                     self.fail_json(**error)
 
@@ -247,7 +276,6 @@ class KubernetesRawModule(KubernetesAnsibleModule):
             result['method'] = 'patch'
             result['diff'] = diffs
             return result
-
 
     def patch_resource(self, resource, definition, existing, name, namespace, merge_type=None):
         try:

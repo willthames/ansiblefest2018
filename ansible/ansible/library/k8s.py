@@ -50,6 +50,9 @@ options:
     - See U(https://kubernetes.io/docs/tasks/run-application/update-api-object-kubectl-patch/#use-a-json-merge-patch-to-update-a-deployment)
     - Requires openshift >= 0.6.2
     - If more than one merge_type is given, the merge_types will be tried in order
+    - If openshift >= 0.6.2, this defaults to C(['strategic-merge', 'merge']), which is ideal for using the same parameters
+      on resource kinds that combine Custom Resources and built-in resources. For openshift < 0.6.2, the default
+      is simply C(strategic-merge).
     choices:
     - json
     - merge
@@ -64,9 +67,24 @@ options:
     - The full definition of an object is needed to generate the hash - this means that deleting an object created with append_hash
       will only work if the same object is passed with state=absent (alternatively, just use state=absent with the name including
       the generated hash and append_hash=no)
-    type:
-    - bool
-    version_added: "2.7"
+    type: bool
+    version_added: "2.8"
+  validate:
+    description:
+      - how (if at all) to validate the resource definition against the kubernetes schema.
+        Requires the kubernetes-validate python module
+    suboptions:
+      fail_on_error:
+        description: whether to fail on validation errors.
+        required: yes
+        type: bool
+      version:
+        description: version of Kubernetes to validate against. defaults to Kubernetes server version
+      strict:
+        description: whether to fail when passing unexpected properties
+        default: no
+        type: bool
+    version_added: "2.8"
 
 requirements:
   - "python >= 2.7"
@@ -133,6 +151,21 @@ EXAMPLES = '''
   k8s:
     state: present
     definition: "{{ lookup('template', '/testing/deployment.yml') }}"
+
+- name: fail on validation errors
+  k8s:
+    state: present
+    definition: "{{ lookup('template', '/testing/deployment.yml') }}"
+    validate:
+      fail_on_error: yes
+
+- name: warn on validation errors, check for unexpected properties
+  k8s:
+    state: present
+    definition: "{{ lookup('template', '/testing/deployment.yml') }}"
+    validate:
+      fail_on_error: no
+      strict: yes
 '''
 
 RETURN = '''
