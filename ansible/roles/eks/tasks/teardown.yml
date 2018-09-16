@@ -1,3 +1,10 @@
+- name: remove EKS cluster
+  aws_eks_cluster:
+    name: "{{ eks_cluster_name }}"
+    state: absent
+    region: "{{ eks_region }}"
+  register: eks_delete
+
 - name: find all ELBs
   elb_classic_lb_facts:
     region: "{{ eks_region }}"
@@ -31,15 +38,9 @@
   loop: "{{ ec2_lc_facts.launch_configurations }}"
   when: item.launch_configuration_name.startswith(eks_cluster_name)
 
-- name: remove EKS cluster
-  aws_eks_cluster:
-    name: "{{ eks_cluster_name }}"
-    state: absent
-    region: "{{ eks_region }}"
-  register: eks_delete
-
-- pause:
-    minutes: 5
+- name: wait a little longer for the EKS cluster to be removed before tearing down the VPC
+  pause:
+    minutes: 2
   when: eks_delete is changed
 
 - name: get VPC id
@@ -63,9 +64,16 @@
     region: "{{ eks_region }}"
     state: absent
 
+- name: find all security groups in the VPC
+  ec2_group_facts:
+    filters:
+      vpc-id: '{{ eks_vpc_facts.vpcs[0].vpc_id }}'
+    region: "{{ eks_region }}"
+  register: ec2_groups
+
 - name: set all security group rule lists to empty to remove circular dependency
   ec2_group:
-    name: "{{ item.name }}"
+    name: "{{ item.group_name }}"
     description: "{{ item.description }}"
     state: present
     rules: []
@@ -74,15 +82,16 @@
     purge_rules_egress: yes
     vpc_id: '{{ eks_vpc_facts.vpcs[0].vpc_id }}'
     region: "{{ eks_region }}"
-  loop: "{{ eks_security_groups }}"
+  loop: "{{ ec2_groups.security_groups }}"
 
 - name: remove security groups
   ec2_group:
-    name: '{{ item.name }}'
+    name: '{{ item.group_name }}'
     state: absent
     vpc_id: '{{ eks_vpc_facts.vpcs[0].vpc_id }}'
     region: "{{ eks_region }}"
-  loop: "{{ eks_security_groups }}"
+  loop: "{{ ec2_groups.security_groups }}"
+  when: "item.group_name != 'default'"
 
 - name: remove setup subnet
   ec2_vpc_subnet:

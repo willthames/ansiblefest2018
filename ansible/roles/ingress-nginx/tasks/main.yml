@@ -1,0 +1,27 @@
+- name: Install nginx ingress controller
+  k8s:
+    src: "{{ role_path + '/templates/manifest.yml' }}"
+
+- name: Obtain ELBs
+  elb_classic_lb_facts:
+    region: "{{ eks_region }}"
+  register: elb_facts
+
+- name: set elb_domain_name
+  set_fact:
+    elb_domain_name: "{{ item.dns_name }}"
+  loop: "{{ elb_facts.elbs }}"
+  when: "('kubernetes.io/cluster/' + eks_cluster_name) in item.tags"
+
+- name: create DNS entries
+  route53:
+    zone: "{{ kube_domain_name }}"
+    record: "{{ item }}.{{ kube_domain_name }}"
+    type: CNAME
+    value: "{{ elb_domain_name }}"
+    state: present
+    overwrite: yes
+  loop:
+    - docker-debug-versioned
+    - docker-debug-unversioned
+

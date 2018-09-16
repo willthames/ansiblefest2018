@@ -43,6 +43,8 @@
     cidr: "{{ item.cidr }}"
     tags:
       Name: "eks-subnet-{{ item.zone }}"
+      KubernetesCluster: "{{ eks_cluster_name }}"
+    purge_tags: no
     region: "{{ eks_region }}"
   register: eks_subnet_results
   loop: "{{ eks_subnets }}"
@@ -74,6 +76,10 @@
     rules_egress: "{{ item.rules_egress|default(omit) }}"
     vpc_id: '{{ eks_vpc_results.vpc.id }}'
     region: "{{ eks_region }}"
+    tags: "{{ item.tags | default({}) }}"
+    purge_tags: no
+    purge_rules: no
+    purge_rules_egress: no
   with_items: "{{ eks_security_groups }}"
   register: eks_security_group_results
 
@@ -150,6 +156,10 @@
     default_result: ABANDON
     region: "{{ eks_region }}"
   register: eks_lifecycle_hook
+
+- name: install nginx ingress
+  include_role:
+    name: ingress-nginx
 
 - name: write helpful message
   debug:

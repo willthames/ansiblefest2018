@@ -56,3 +56,11 @@ eks_security_groups:
       - ports: 22
         proto: tcp
         cidr_ip: 0.0.0.0/0
+      - from_port: 1
+        to_port: 65535
+        cidr_ip:
+          - "{{ eks_subnets[0].cidr }}"
+          - "{{ eks_subnets[1].cidr }}"
+          - "{{ eks_subnets[2].cidr }}"
+    tags:
+      KubernetesCluster: "{{ eks_cluster_name }}"
