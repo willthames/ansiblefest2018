@@ -1,5 +1,6 @@
 all: blue green
 
 blue green:
-	echo '.header { background-color: $@; }' > static/colour.css
-	docker build -t docker_debug:$@ .
+	echo 'colour = "$@"' > colour.py
+	docker build -t willthames/docker_debug:$@ .
+	docker push willthames/docker_debug:$@

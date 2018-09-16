@@ -11,3 +11,4 @@ COPY templates templates
 COPY server.py server.py
 COPY helloworld.txt helloworld.txt
 COPY static static
+COPY colour.py colour.py
