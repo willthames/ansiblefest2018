@@ -1,0 +1,4 @@
+container_registry: ""
+kube_resource_configmaps: {}
+kube_resource_secrets: {}
+unsafe_show_logs: no
