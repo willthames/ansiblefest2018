@@ -8,13 +8,16 @@
 - Introduction
 - About Kubernetes
 - Managing Kubernetes with Ansible
+
 ---
 
 # Motivation
+
 ---
 
 FIXME: replace with Ansible's slide
-# About me 
+
+# About me
 
 - Ansible contributor since July 2012
 - Author of ansible-lint, ansible-review, ansible-inventory-grapher
@@ -23,6 +26,12 @@ FIXME: replace with Ansible's slide
 ---
 
 # About Skedulo
+
+- Skedulo is the platform for intelligent mobile workforce management
+- Helps enterprises intelligently manage, schedule, dispatch, and track
+  workers in the field
+- Typical use-cases include healthcare, home services
+
 
 
 ---
@@ -96,7 +105,7 @@ use GKE, AKS, EKS or something like kops
 
 ---
 
-# What makes Ansible so well suited to Kubernetes management
+# Ansible's Kubernetes strengths
 
 - Templating
 - Hierarchical inventory
@@ -108,8 +117,12 @@ use GKE, AKS, EKS or something like kops
 # Anti-pattern: using kubectl in playbooks
 
 - `kubectl` is *awesome*
-- But all the usual caveats to running commands apply
+- But all the usual caveats to running commands apply<sup>&dagger;</sup>
 - You have to do a template/kubectl/delete dance
+
+<div class="footer">
+<sup>&dagger;</sup><a href="http://willthames.github.io/2016/09/21/using-command-and-shell-in-ansible.html">
+Using Ansible's `shell` and `command` modules properly</a>
 
 <aside class="notes">
 if it has a feature that the `k8s` module does not, that can
@@ -176,16 +189,74 @@ metadata:
 
 ---
 
+# Hierarchical inventory
+
+* Some variables are the same across many applications within an environment
+* Some variables are the same across all environments for an application
+* Some variables can be composed from other variables
+* Some variables may need specific overrides for certain application/environment
+  combinations
+* All of these needs are met by inventory groups
+
+<aside class="notes">
+* e.g. the hostname of a particular database instance
+* e.g. the name of a datastore within a database
+* e.g. if you know the domain name for an environment, working out the fully qualified
+  hostname can be easy
+</aside>
+
+---
+
+# Avoiding `hosts: localhost`
+
+* Typically people will use `hosts: localhost` to talk to Kubernetes
+* This reduces the power of inventory and reuse:
+
+FIXME: flat inventory vs structured inventory
+
+
+
+# Using the runner pattern
+
+* Runner pattern uses hosts declarations like `hosts: "{{ env }}-{{ app }}-runner"`
+  with e.g. `-e env=test -e app=web`.
+* Suitable inventory group hierarchies allow such hosts to gather their inventory
+  from groups such as `test`, `web` and `test-web`, as well as the `runner` group
+* Set `ansible_connection: local` and `ansible_python_interpreter: "{{ ansible_playbook_python }}"`
+  in the `runner` group_vars file.
+
+
+---
+
+# Generating inventory
+
+For every application/environment pair, you might want a group for the application,
+a group for the environment and a group for the application-environment pair.
+
+It is possible to define these using standard ansible inventory files but they quickly
+explode as the number of applications and environments increase
+
+Instead can use the `generator` inventory plugin to generate such group combinations
+from a list of layers.
+
+---
+
 # Secrets
 
-- We use `ansible-vault` for all of our secrets.
-- Anti-pattern: vaulting whole secrets files - this causes huge
-  diffs on change (the whole file changes for a single byte difference)
-- Tip: Use `ansible-vault encrypt_string` to encrypt each secret inline
-- Note: Don't forget to use `echo -n $secret | ansible-vault encrypt_string` to
+
+<ul class="tip">
+<li>Use `ansible-vault encrypt_string` to encrypt each secret inline</li>
+</ul>
+<ul class="warn">
+<li>Don't forget to use `echo -n $secret | ansible-vault encrypt_string` to
   avoid encrypting the newline!
+</ul>
+
+- We use `ansible-vault` for all of our secrets.
 - Kubernetes expects secrets to be base64 encoded
 - Use `no_log` with the `k8s` module when uploading  secrets
+- Anti-pattern: vaulting whole secrets files - this causes huge
+  diffs on change (the whole file changes for a single byte difference)
 
 ---
 
@@ -228,50 +299,6 @@ key1: !vault |
 my_secret_env:
   KEY1: "{{ key1 | b64encode }}"
 ```
----
-
-# Hierarchical inventory
-
-* Some variables are the same across many applications within an environment
-* Some variables are the same across all environments for an application
-* Some variables can be composed from other variables
-* Some variables may need specific overrides for certain application/environment
-  combinations
-* All of these needs are met by inventory groups
-
-<aside class="notes">
-* e.g. the hostname of a particular database instance
-* e.g. the name of a datastore within a database
-* e.g. if you know the domain name for an environment, working out the fully qualified
-  hostname can be easy
-</aside>
-
----
-
-# Inventory runner pattern
-
-* Typically people will use `hosts: localhost` to talk to Kubernetes
-* This reduces the power of inventory
-* Runner pattern uses hosts declarations like `hosts: "{{ env }}-{{ app }}-runner"`
-  with e.g. `-e env=test -e app=web`.
-* Suitable inventory group hierarchies allow such hosts to gather their inventory
-  from groups such as `test`, `web` and `test-web`, as well as the `runner` group
-* Set `ansible_connection: local` and `ansible_python_interpreter: "{{ ansible_playbook_python }}"`
-  in the `runner` group_vars file.
-
----
-
-# Generating inventory
-
-For every application/environment pair, you might want a group for the application,
-a group for the environment and a group for the application-environment pair.
-
-It is possible to define these using standard ansible inventory files but they quickly
-explode as the number of applications and environments increase
-
-Instead can use the `generator` inventory plugin to generate such group combinations
-from a list of layers.
-
 ---
 
 # Modules
