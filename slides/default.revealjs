@@ -57,24 +57,6 @@ $endfor$
   <div class="reveal">
     <div class="slides">
 
-$if(title)$
-<section>
-    <h1 class="title">$title$</h1>
-$if(subtitle)$
-  <h1 class="subtitle">$subtitle$</h1>
-$endif$
-$for(author)$
-    <h2 class="author">$author$</h2>
-$endfor$
-    <h3 class="date">$date$</h3>
-</section>
-$endif$
-$if(toc)$
-<section id="$idprefix$TOC">
-$toc$
-</section>
-$endif$
-
 $body$
     </div>
   </div>

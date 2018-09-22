@@ -1,6 +1,16 @@
 % Making Kubernetes Easy With Ansible
 % Will Thames, Skedulo
-% October 2018
+%# October 2018
+
+---
+
+# Making Kubernetes Easy With Ansible
+## Will Thames, Skedulo
+### October 2018
+
+<div class="image-left"><image src="images/ansible.png"></div>
+<div class="image-right"><image src="images/kubernetes.png"></div>
+
 ---
 
 # Contents

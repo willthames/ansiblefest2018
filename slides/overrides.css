@@ -47,3 +47,20 @@
 .slides ul.warn li:before {
   content: '\f071';
 }
+
+.slides .image-left {
+  position: absolute;
+  left: 10px;
+  bottom: 10%;
+}
+
+.slides .image-right {
+  position: absolute;
+  right: 10px;
+  bottom: 10%;
+}
+
+.slides .image-right img, .slides .image-left img {
+  border: none;
+  box-shadow: none;
+}
