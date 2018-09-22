@@ -1,0 +1,3 @@
+web_fqdn: api.test.example.com
+web_db_user: web_user
+web_db_host: db.test.example.com

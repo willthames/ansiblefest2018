@@ -8,8 +8,8 @@
 ## Will Thames, Skedulo
 ### October 2018
 
-<div class="image-left"><image src="images/ansible.png"></div>
-<div class="image-right"><image src="images/kubernetes.png"></div>
+<div class="image-left"><img src="images/ansible.png"></div>
+<div class="image-right"><img src="images/kubernetes.png"></div>
 
 ---
 
@@ -40,8 +40,10 @@ FIXME: replace with Ansible's slide
 - Skedulo is the platform for intelligent mobile workforce management
 - Helps enterprises intelligently manage, schedule, dispatch, and track
   workers in the field
-- Typical use-cases include healthcare, home services
+- Typical use-cases include healthcare, property management, home
+  improvement services
 
+<div class="image-right"><img src="images/skedulo.png"></div>
 
 
 ---
@@ -53,6 +55,14 @@ FIXME: replace with Ansible's slide
 - Starts now! (10+ minutes to fire up EKS)
 
 ---
+
+# Live Demo architecture
+
+<div class="image-center"><img src="images/eks.png"></div>
+
+---
+
+
 
 # What's not in this talk
 
@@ -220,11 +230,13 @@ metadata:
 # Avoiding `hosts: localhost`
 
 * Typically people will use `hosts: localhost` to talk to Kubernetes
-* This reduces the power of inventory and reuse:
+* This reduces the power of inventory and reuse
 
-FIXME: flat inventory vs structured inventory
+<div class="footer">
+Read more: <a href="http://willthames.github.io/2017/10/31/making-the-most-of-inventory.html">Making the Most of Inventory</a>
+</div>
 
-
+---
 
 # Using the runner pattern
 
@@ -235,19 +247,92 @@ FIXME: flat inventory vs structured inventory
 * Set `ansible_connection: local` and `ansible_python_interpreter: "{{ ansible_playbook_python }}"`
   in the `runner` group_vars file.
 
+---
+
+# Flat vs hierarchical inventory
+
+<div class="image-left"><image src="images/flat.png"></div>
+<div class="image-right"><image src="images/hierarchical.png"></div>
 
 ---
 
 # Generating inventory
 
-For every application/environment pair, you might want a group for the application,
-a group for the environment and a group for the application-environment pair.
+* Group combinations explode as applications and environments increase
 
-It is possible to define these using standard ansible inventory files but they quickly
-explode as the number of applications and environments increase
+* It's easy to get this wrong with standard hosts files
 
-Instead can use the `generator` inventory plugin to generate such group combinations
-from a list of layers.
+* `generator` inventory plugin generates such group combinations
+  from a list of layers
+
+<div class="footer">
+Read more: <a href="http://willthames.github.io/2017/11/01/generating-inventory.html">Generating Inventory</a>
+</div>
+
+---
+
+# Standard hosts file
+
+```
+[test:children]
+test-web
+test-api
+
+[api:children]
+test-api
+
+[web:children]
+test-web
+
+[test-web]
+test-web-runner
+
+[test-api]
+test-api-runner
+
+[runner]
+test-web-runner
+test-api-runner
+```
+
+<aside class="notes">
+This is just one environment with two applications. Adding another environment
+would almost double the file's length
+</aside>
+
+---
+
+# Generator plugin hosts file
+
+```
+# inventory.config file in YAML format
+plugin: generator
+strict: False
+hosts:
+    name: "{{ environment }}-{{ application }}-runner"
+    parents:
+      - name: "{{ environment }}-{{ application }}"
+        parents:
+          - name: "{{ application }}"
+            vars:
+              application: "{{ application }}"
+          - name: "{{ environment }}"
+            vars:
+              environment: "{{ environment }}"
+      - name: runner
+layers:
+    environment:
+        - test
+    application:
+        - web
+        - api
+```
+
+<aside class="notes">
+This is the same inventory. Although it seems longer and more complicated,
+adding a new application or a new environment involves adding just one extra
+line.
+</aside>
 
 ---
 
@@ -261,13 +346,16 @@ from a list of layers.
 <li>Don't forget to use `echo -n $secret | ansible-vault encrypt_string` to
   avoid encrypting the newline!
 </ul>
-
 - We use `ansible-vault` for all of our secrets.
 - Kubernetes expects secrets to be base64 encoded
 - Use `no_log` with the `k8s` module when uploading  secrets
-- Anti-pattern: vaulting whole secrets files - this causes huge
-  diffs on change (the whole file changes for a single byte difference)
-
+<ul class="danger">
+<li>vaulting whole secrets files - this causes huge
+  diffs on change</li>
+</ul>
+<aside class="notes">
+the whole file changes for a single byte difference
+</aside>
 ---
 
 # Secrets in environment variables
@@ -275,6 +363,7 @@ from a list of layers.
 - Use a Secret resource to store secret environment variables
 - Use envFrom if you then want to include all the secrets from that resource
 
+# A Secret manifest
 ```
 apiVersion: v1
 kind: Secret
@@ -323,7 +412,7 @@ my_secret_env:
 
 ---
 
-# k8s module
+# `k8s` module
 
 - uses the same manifest definitions as kubectl
 - can take inline resource `definition`s, or `src` from file
@@ -335,7 +424,7 @@ my_secret_env:
 
 <aside class="notes">
 Main difference is how `changed` behaves.
-
+</aside>
 
 ---
 
@@ -347,13 +436,16 @@ Main difference is how `changed` behaves.
   modules
 * `to_nice_yaml` and `indent` are helpful for outputting ansible data structures
   into kubernetes manifest form
+* `b64encode` encodes secrets in base64
 
 ---
 
-# Upcoming features of the k8s module
+# Upcoming features of the `k8s` module
 
 * `append_hash` will enable immutable ConfigMaps and Secrets (likely 2.8)
 * `validate` will return helpful warning and/or error messages if a resource manifest
   does not match the Kubernetes resource specification (likely 2.8)
 * `wait` will allow you to wait until the Kubernetes resources are actually in the
   desired state (hopefully 2.8)
+
+

@@ -1,0 +1,3 @@
+api_fqdn: api.test.example.com
+api_db_user: api_user
+api_db_host: db.test.example.com

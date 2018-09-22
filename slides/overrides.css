@@ -1,9 +1,9 @@
 .reveal figcaption { display: none !important; }
 .reveal p, .reveal ul { text-align: left;}
-.reveal pre code { font-size: 36px; line-height: 1.2; }
+.reveal pre code { font-size: 24px; line-height: 1.2; }
 .reveal h1 { text-transform: none !important; font-size: 2em !important; }
 .reveal h1 code { font-weight: normal; letter-spacing: 0.8 }
-.reveal code { font-family: Source Code Pro,Monaco,monospace !important; }
+.reveal code { font-family: Latin Modern Mono Light,Source Code Pro,Monaco,monospace !important; }
 
 .slides .footer {
   position: absolute;
@@ -48,19 +48,27 @@
   content: '\f071';
 }
 
-.slides .image-left {
+.slides div.image-left {
   position: absolute;
   left: 10px;
   bottom: 10%;
 }
 
-.slides .image-right {
+.slides div.image-right {
   position: absolute;
   right: 10px;
   bottom: 10%;
 }
 
-.slides .image-right img, .slides .image-left img {
+.slides div.image-center {
+  position: absolute;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  bottom: 10%;
+}
+
+.slides section div img {
   border: none;
   box-shadow: none;
 }
