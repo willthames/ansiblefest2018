@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="generator" content="pandoc">
+  <meta name="author" content="Will Thames, Skedulo" />
+  <title>Making Kubernetes Easy With Ansible</title>
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="stylesheet" href="reveal.js/css/reveal.css"/>
+  <link rel="stylesheet" href="overrides.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <style type="text/css">code{white-space: pre;}</style>
+  <link rel="stylesheet" href="reveal.js/css/theme/white.css" id="theme">
+  <!-- If the query includes 'print-pdf', include the PDF print sheet -->
+  <script>
+    if( window.location.search.match( /print-pdf/gi ) ) {
+      var link = document.createElement( 'link' );
+      link.rel = 'stylesheet';
+      link.type = 'text/css';
+      link.href = 'reveal.js/css/print/pdf.css';
+      document.getElementsByTagName( 'head' )[0].appendChild( link );
+    }
+  </script>
+  <!--[if lt IE 9]>
+  <script src="reveal.js/lib/js/html5shiv.js"></script>
+  <![endif]-->
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+<section class="slide level1">
+
+<div class="intro">
+<h3>
+How did you get started with Ansible?
+</h3>
+<p>I saw a post by Michael Dehaan about a new configuration management system and thought “here we go, just what the world needs, yet another CM”</p>
+<p>I was working at a banking/insurance company with locked down application servers with no root access or agents allowed. I had ssh and python though…</p>
+<h3>
+How long have you been using it?
+</h3>
+<p>My first commit was July 2012—so some time around then</p>
+<h3>
+What’s your favourite thing to do when you Ansible?
+</h3>
+<p>Mostly Kubernetes these days! But AWS works pretty well too.</p>
+</div>
+</section>
+<section id="making-kubernetes-easy-with-ansible" class="slide level1">
+<h1>Making Kubernetes Easy With Ansible</h1>
+<h2 id="will-thames-skedulo">Will Thames, Skedulo</h2>
+<h3 id="october-2018">October 2018</h3>
+<div class="image-left">
+<img src="images/ansible.png">
+</div>
+<div class="image-right">
+<img src="images/kubernetes.png">
+</div>
+</section>
+<section id="motivation" class="slide level1">
+<h1>Motivation</h1>
+<ul>
+<li>Minimise effort to add new applications and environments</li>
+<li>Maintain configuration in source control in a secure fashion</li>
+<li>Use configuration to manage clusters</li>
+<li>Get the best out of Ansible</li>
+</ul>
+</section>
+<section id="about-skedulo" class="slide level1">
+<h1>About Skedulo</h1>
+<ul>
+<li>Skedulo is the platform for intelligent mobile workforce management</li>
+<li>Helps enterprises intelligently manage, schedule, dispatch, and track workers in the field</li>
+<li>Typical use-cases include healthcare, property management, home improvement services</li>
+</ul>
+<div class="image-right">
+<img src="images/skedulo.png">
+</div>
+</section>
+<section id="skedulo-platform" class="slide level1">
+<h1>Skedulo Platform</h1>
+<ul>
+<li>AWS underlying infrastructure built using terraform</li>
+<li>Kubernetes 1.9 built using kops</li>
+<li>Ansible for everything on top</li>
+<li>10s of applications</li>
+</ul>
+<aside class="notes">
+We’re lucky to be learning the lessons at 10s of applications in case we need 100s
+</aside>
+</section>
+<section id="live-demo" class="slide level1">
+<h1>Live Demo</h1>
+<ul>
+<li>Create a brand new Kubernetes cluster in AWS’ Elastic Kubernetes Service</li>
+<li>Demonstrate some of the best practices for Kubernetes configuration management</li>
+<li>Starts now! (10+ minutes to fire up EKS)</li>
+</ul>
+<div class="footer">
+<p>Demo code: <a href="https://github.com/willthames/ansiblefest2018">https://github.com/willthames/ansiblefest2018</a></p>
+</div>
+</section>
+<section id="live-demo-architecture" class="slide level1">
+<h1>Live Demo architecture</h1>
+<div class="image-center">
+<img src="images/eks.png">
+</div>
+</section>
+<section id="whats-not-in-this-talk" class="slide level1">
+<h1>What’s not in this talk</h1>
+<ul>
+<li>explicit comparisons with other Kubernetes configuration management (e.g. Helm)</li>
+<li>explicit comparisons with other configuration management tools (chef, puppet, etc)</li>
+<li>Much about Kubernetes <em>cluster</em> management</li>
+<li>Add ons to Kubernetes</li>
+<li>Datastore management</li>
+</ul>
+<aside class="notes">
+use GKE, AKS, EKS or something like kops
+</aside>
+</section>
+<section id="about-kubernetes" class="slide level1">
+<h1>About Kubernetes</h1>
+<ul>
+<li>Kubernetes is a platform for managing, scaling and deploying applications running on containers across distributed networks</li>
+<li>Kubernetes continually runs a reconciliation loop to ensure the cluster is in the desired state and corrects it if possible</li>
+</ul>
+</section>
+<section id="kubernetes-as-a-common-language" class="slide level1">
+<h1>Kubernetes as a common language</h1>
+<p>Kubernetes allows the specification of common characteristics of applications and services:</p>
+<ul>
+<li>an application’s deployable and its associated configuration (<code>Pod</code>)</li>
+<li>how many replicas should run, and where; how should updates be handled (<code>Deployment</code>/<code>DaemonSet</code>)</li>
+<li>what endpoints should be exposed to the applications (<code>Service</code>)</li>
+<li>what traffic should go to the <code>Service</code> (<code>Ingress</code>)</li>
+</ul>
+<aside class="notes">
+<ul>
+<li>e.g. environment variables, volume mounts</li>
+<li>e.g. rolling update, replace in place</li>
+</ul>
+</aside>
+</section>
+<section id="kubernetes-as-a-common-language-1" class="slide level1">
+<h1>Kubernetes as a common language</h1>
+<ul>
+<li><code>ConfigMap</code>—one or more configuration items in key-value form. Useful for setting environment variables or specifying the entire contents of one or more files for a <code>Pod</code></li>
+<li><code>Secret</code>—similar to <code>ConfigMap</code> but better protected from casual view.</li>
+</ul>
+</section>
+<section id="kubernetes-resource-definitions" class="slide level1">
+<h1>Kubernetes resource definitions</h1>
+<ul>
+<li><p>Resource definitions are in YAML form</p>
+<pre><code>apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-config-map
+  namespace: my-namespace
+data:
+  hello: world</code></pre></li>
+<li><p>Typically managed by the <code>kubectl</code> command line tool <code>kubectl apply -f resource.yml</code></p></li>
+</ul>
+</section>
+<section id="ansibles-kubernetes-strengths" class="slide level1">
+<h1>Ansible’s Kubernetes strengths</h1>
+<ul>
+<li>Templating</li>
+<li>Hierarchical inventory</li>
+<li>Secrets management</li>
+<li>Modules, lookup plugins, filter plugins</li>
+</ul>
+</section>
+<section id="anti-pattern-using-kubectl-in-playbooks" class="slide level1">
+<h1>Anti-pattern: using kubectl in playbooks</h1>
+<ul>
+<li><code>kubectl</code> is <em>awesome</em></li>
+<li>But all the usual caveats to running commands apply<sup>†</sup></li>
+<li>You have to do a template/kubectl/delete dance</li>
+</ul>
+<div class="footer">
+<p><sup>†</sup><a href="http://willthames.github.io/2016/09/21/using-command-and-shell-in-ansible.html"> Using Ansible’s <code>shell</code> and <code>command</code> modules properly</a></p>
+<aside class="notes">
+if it has a feature that the <code>k8s</code> module does not, that can be considered a bug
+</aside>
+</section>
+<section id="are-there-reasons-to-use-kubectl" class="slide level1">
+<h1>Are there reasons to use kubectl?</h1>
+<ul>
+<li><code>kubectl</code> does validation</li>
+<li><code>kubectl</code> can append hashes to <code>ConfigMap</code>s and <code>Secret</code>s to make them immutable</li>
+<li><p>ad-hoc tasks:</p>
+<pre><code>kubectl get configmap -n some-namespace some-config-map
+ansible -m k8s_facts -a &#39;namespace=some-namespace kind=ConfigMap \
+  api_version=v1 name=some-config-map&#39; localhost</code></pre>
+<aside class="notes">
+immutable ConfigMaps aren’t possible with kubectl in a declarative way yet
+</aside></li>
+</ul>
+</section>
+<section id="reuse" class="slide level1">
+<h1>Reuse</h1>
+<ul>
+<li>Our goal is to use as much common code for Kubernetes management as possible.</li>
+<li>A single Ansible role that takes a set of resource manifests and ensures that Kubernetes meets those expectations</li>
+<li>Ideally, one manifest template that works for most applications would be great, but harder.</li>
+<li>At the very least, manifests should be reusable across all environments.</li>
+</ul>
+</section>
+<section id="templating" class="slide level1">
+<h1>Templating</h1>
+<ul>
+<li>Templates are super-powerful</li>
+<li><p>Use as few control structures as possible</p>
+<pre><code>replicas = {% 5 if env == &#39;prod&#39; else 1 %}</code></pre>
+<p>vs</p>
+<pre><code>replicas = {{ kube_deployment_replicas }}</code></pre></li>
+</ul>
+</section>
+<section id="templating-dicts" class="slide level1">
+<h1>Templating dicts</h1>
+<p>Sometimes whole sections of manifests differ between environment (e.g. if one environment needs annotations for certificates and one doesn’t)</p>
+<pre><code>annotations:
+  all_envs: have this annotation
+  this_one: is only in some environments</code></pre>
+<pre><code>metadata:
+  annotations:
+    {{ annotations | to_nice_yaml(indent=2) | indent=4 }}</code></pre>
+</section>
+<section id="hierarchical-inventory" class="slide level1">
+<h1>Hierarchical inventory</h1>
+<ul>
+<li>Some properties are the same across many applications within an environment</li>
+<li>Some properties are the same across all environments for an application</li>
+<li>Some properties can be composed from other properties</li>
+<li>Some properties may need specific overrides for certain application/environment combinations</li>
+<li>All of these needs are met by inventory groups</li>
+</ul>
+<aside class="notes">
+<ul>
+<li>e.g. the hostname of a particular database instance</li>
+<li>e.g. the name of a datastore within a database</li>
+<li>e.g. if you know the domain name for an environment, working out the fully qualified hostname can be easy</li>
+</ul>
+</aside>
+</section>
+<section id="avoiding-hosts-localhost" class="slide level1">
+<h1>Avoiding <code>hosts: localhost</code></h1>
+<ul>
+<li>Typically people will use <code>hosts: localhost</code> to talk to Kubernetes</li>
+<li>This reduces the power of inventory and reuse</li>
+</ul>
+<div class="footer">
+<p>Read more: <a href="http://willthames.github.io/2017/10/31/making-the-most-of-inventory.html">Making the Most of Inventory</a></p>
+</div>
+</section>
+<section id="using-the-runner-pattern" class="slide level1">
+<h1>Using the runner pattern</h1>
+<ul>
+<li>Runner pattern uses hosts declarations like <code>hosts: &quot;{{ env }}-{{ app }}-runner&quot;</code> with e.g. <code>-e env=test -e app=web</code>.</li>
+<li>inventory hierarchies allow runners to gather their inventory from groups such as <code>test</code>, <code>web</code> and <code>test-web</code></li>
+<li>Set <code>ansible_connection: local</code> and <code>ansible_python_interpreter:</code> <code>&quot;{{ ansible_playbook_python }}&quot;</code> in the <code>runner</code> group_vars file.</li>
+</ul>
+</section>
+<section id="flat-vs-hierarchical-inventory" class="slide level1">
+<h1>Flat vs hierarchical inventory</h1>
+<div class="image-left">
+<image src="images/flat.png">
+</div>
+<div class="image-right">
+<image src="images/hierarchical.png">
+</div>
+<aside class="notes">
+Allows variables to be reused across applications in resource definitions
+</aside>
+</section>
+<section id="generating-inventory" class="slide level1">
+<h1>Generating inventory</h1>
+<ul>
+<li><p>Group combinations explode as applications and environments increase</p></li>
+<li><p>It’s easy to get this wrong with standard hosts files</p></li>
+<li><p><code>generator</code> inventory plugin generates such group combinations from a list of layers</p></li>
+</ul>
+<div class="footer">
+<p>Read more: <a href="http://willthames.github.io/2017/11/01/generating-inventory.html">Generating Inventory</a></p>
+</div>
+<aside class="notes">
+This takes the form of a host not being in a group that it needs to be in or a child group not belonging to a particular parent group - this is very easy to get wrong, and very hard to spot. ansible-inventory-grapher was originally written to help troubleshoot such issues, but less necessary now
+</aside>
+</section>
+<section id="standard-hosts-file" class="slide level1">
+<h1>Standard hosts file</h1>
+<pre><code>[test:children]
+test-web
+test-api
+
+[api:children]
+test-api
+
+[web:children]
+test-web
+
+[test-web]
+test-web-runner
+
+[test-api]
+test-api-runner
+
+[runner]
+test-web-runner
+test-api-runner</code></pre>
+<aside class="notes">
+This is just one environment with two applications. Adding another environment would almost double the file’s length
+</aside>
+</section>
+<section id="generator-plugin-hosts-file" class="slide level1">
+<h1>Generator plugin hosts file</h1>
+<pre><code># inventory.config file in YAML format
+plugin: generator
+strict: False
+hosts:
+    name: &quot;{{ environment }}-{{ application }}-runner&quot;
+    parents:
+      - name: &quot;{{ environment }}-{{ application }}&quot;
+        parents:
+          - name: &quot;{{ application }}&quot;
+            vars:
+              application: &quot;{{ application }}&quot;
+          - name: &quot;{{ environment }}&quot;
+            vars:
+              environment: &quot;{{ environment }}&quot;
+      - name: runner
+layers:
+    environment:
+        - test
+    application:
+        - web
+        - api</code></pre>
+<aside class="notes">
+This is the same inventory. Although it seems longer and more complicated, adding a new application or a new environment involves adding just one extra line.
+</aside>
+</section>
+<section id="secrets" class="slide level1">
+<h1>Secrets</h1>
+<ul>
+<li>We use <code>ansible-vault</code> for all of our secrets.</li>
+<li>Kubernetes expects secrets to be base64 encoded</li>
+<li>Use <code>no_log</code> with the <code>k8s</code> module when uploading secrets</li>
+</ul>
+<ul class="tip">
+<li>
+Use <code>ansible-vault encrypt_string</code> to encrypt each secret inline
+</li>
+</ul>
+<ul class="warn">
+<li>
+Don’t forget to use <code>echo -n $secret | ansible-vault encrypt_string</code> to avoid encrypting the newline!
+</ul>
+<ul class="danger">
+<li>
+Avoid vaulting whole variables files
+</li>
+</ul>
+<aside class="notes">
+the whole file changes for a single byte difference
+</aside>
+</section>
+<section id="secrets-in-environment-variables" class="slide level1">
+<h1><code>Secret</code>s in environment variables</h1>
+<ul>
+<li>Use a <code>Secret</code> resource to store secret environment variables</li>
+<li>Use <code>envFrom</code> if you then want to include all the secrets from that resource</li>
+</ul>
+</section>
+<section id="secrets-in-environment-variables-1" class="slide level1">
+<h1><code>Secret</code>s in environment variables</h1>
+<pre><code>key1: !vault |
+  $ANSIBLE_VAULT;1.1;AES256
+  61666162663666643939353165393833383331313664616234343739653937336337626263663538
+  3335336263303963623332666639666364356166393462370a396465393637363938656562393936
+  61663834376235613564303237313131396335303336636466326430353530613836356564343832
+  6638393533663931640a663438313461616436393365346566313037613034323738646234363534
+  3734
+my_secret_env:
+  KEY1: &quot;{{ key1 | b64encode }}&quot;</code></pre>
+</section>
+<section id="a-secret-manifest" class="slide level1">
+<h1>A <code>Secret</code> manifest</h1>
+<pre><code>apiVersion: v1
+kind: Secret
+metadata:
+  name: my-secret-env
+  namespace: my-namespace
+data:
+  {{ my_secret_env | to_nice_yaml(indent=2) | indent(2) }}</code></pre>
+</section>
+<section id="using-the-secret" class="slide level1">
+<h1>Using the <code>Secret</code></h1>
+<pre><code>---
+kind: Deployment
+spec:
+  template:
+    spec:
+      containers:
+      - envFrom:
+          - secretRef:
+              name: my-secret-env</code></pre>
+</section>
+<section id="why-immutable-configmaps" class="slide level1">
+<h1>Why Immutable <code>ConfigMap</code>s?</h1>
+<ul>
+<li>Updating a <code>ConfigMap</code> used in a <code>Deployment</code> will not update the <code>Pod</code>s in that <code>Deployment</code></li>
+<li>Rolling back to a previous configuration will not cause the <code>Pod</code>s to pick up the <code>ConfigMap</code> or <code>Secret</code>s changes</li>
+<li><code>kubectl rollout undo</code> for emergency purposes will only roll back containers, not configuration</li>
+</ul>
+<aside class="notes">
+Here the constraints are that the Deployment must change to pick up a new ConfigMap, but that won’t happen if the ConfigMap changes but the Deployment doesn’t
+</aside>
+</section>
+<section id="immutable-configmaps" class="slide level1">
+<h1>Immutable <code>ConfigMap</code>s</h1>
+<ul>
+<li>Name <code>ConfigMap</code>s based on a hash of its data</li>
+<li>Reference this <code>ConfigMap</code> name in a <code>Deployment</code></li>
+<li>Changing a existing <code>ConfigMap</code> will change its name, triggering <code>Pod</code> updates</li>
+<li>Rolling back a <code>Deployment</code> will then roll back to the old config</li>
+<li>Use <code>append_hash</code> to generate immutable <code>ConfigMaps</code></li>
+<li>Use <code>k8s_config_resource_name</code> filter plugin to reference such <code>ConfigMap</code>s</li>
+</ul>
+<aside class="notes">
+Nothing yet garbage collects orphaned ConfigMaps and Secrets
+</aside>
+</section>
+<section id="demo" class="slide level1">
+<h1>Demo</h1>
+<p>Scenario:</p>
+<ul>
+<li>We’re practising Continuous Delivery with Blue/Green Deployments and feature flags</li>
+<li>Upgrade application</li>
+<li>Enable feature flag</li>
+<li>Realise feature is buggy</li>
+<li>Disable feature flag</li>
+</ul>
+</section>
+<section id="modules" class="slide level1">
+<h1>Modules</h1>
+<ul>
+<li><code>k8s</code>—main module for managing Kubernetes resources.</li>
+<li><code>k8s_facts</code>—useful for run-time querying of resources</li>
+<li><code>aws_eks_cluster</code>—manages AWS EKS clusters</li>
+<li><code>azure_rm_aks</code>—manages Azure Kubernetes Service clusters</li>
+<li><code>gcp_container_cluster</code> and <code>gcp_container_nodepool</code>—manage GKE clusters and node pools</li>
+</ul>
+</section>
+<section id="k8s-module" class="slide level1">
+<h1><code>k8s</code> module</h1>
+<ul>
+<li>uses the same manifest definitions as kubectl</li>
+<li>can take inline resource <code>definition</code>s, or <code>src</code> from file</li>
+<li>inline definitions work well with <code>template</code> lookup <code>definition: &quot;{{ lookup('template',</code> <code>'path/to/resource.j2') | from_yaml }}&quot;</code></li>
+<li>invoke once with a manifest containing a list of resources, or invoke in a <code>loop</code> over a list of resources</li>
+<li>copes with Custom Resource Definitions (2.7)</li>
+</ul>
+<aside class="notes">
+Main difference is how <code>changed</code> behaves.
+</aside>
+</section>
+<section id="upcoming-features-of-the-k8s-module" class="slide level1">
+<h1>Upcoming features of the <code>k8s</code> module</h1>
+<ul>
+<li><code>append_hash</code> will enable immutable <code>ConfigMap</code>s and <code>Secret</code>s (likely 2.8)</li>
+<li><code>validate</code> will return helpful warning and/or error messages if a resource manifest does not match the Kubernetes resource specification (likely 2.8)</li>
+<li><code>wait</code> will allow you to wait until the Kubernetes resources are actually in the desired state (hopefully 2.8)</li>
+</ul>
+</section>
+<section id="plugins" class="slide level1">
+<h1>Plugins</h1>
+<ul>
+<li><code>yaml</code> stdout callback plugin is great for having output match input</li>
+<li><code>k8s</code> lookup plugin returns information about Kubernetes resources</li>
+<li><code>from_yaml</code> and <code>from_yaml_all</code> (2.7) read from templates into module data</li>
+<li><code>b64encode</code> encodes secrets in base64</li>
+<li><code>k8s_config_hash</code> and <code>k8s_config_resource_name</code> for immutable <code>ConfigMap</code>s (likely 2.8)</li>
+</ul>
+<aside class="notes">
+I mentioned <code>to_nice_yaml</code> and <code>indent</code> earlier for converting data into kubernetes manifest form
+</aside>
+</section>
+<section id="thanks-for-listening" class="slide level1">
+<h1>Thanks for listening</h1>
+<ul>
+<li>Slides: <a href="https://willthames.github.io/ansiblefest2018" class="uri">https://willthames.github.io/ansiblefest2018</a></li>
+<li>Code: <a href="https://github.com/willthames/ansiblefest2018" class="uri">https://github.com/willthames/ansiblefest2018</a></li>
+</ul>
+</section>
+    </div>
+  </div>
+
+
+  <script src="reveal.js/lib/js/head.min.js"></script>
+  <script src="reveal.js/js/reveal.js"></script>
+
+  <script>
+
+      // Full list of configuration options available here:
+      // https://github.com/hakimel/reveal.js#configuration
+      Reveal.initialize({
+        controls: true,         // Display controls in the bottom right corner
+        progress: true,         // Display a presentation progress bar
+        history: true,          // Push each slide change to the browser history
+        center: false,                       // Vertical centering of slides
+        maxScale: 1.5,                  // Bounds for smallest/largest possible content scale
+        slideNumber: false,                // Display the page number of the current slide
+        theme: 'white', // available themes are in /css/theme
+        transition: Reveal.getQueryHash().transition || 'default', // default/cube/page/concave/zoom/linear/fade/none
+
+        // Optional libraries used to extend on reveal.js
+        dependencies: [
+          { src: 'reveal.js/lib/js/classList.js', condition: function() { return !document.body.classList; } },
+          { src: 'reveal.js/plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+          { src: 'reveal.js/plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } },
+//          { src: 'reveal.js/plugin/search/search.js', async: true, condition: function() { return !!document.body.classList; }, }
+//          { src: 'reveal.js/plugin/remotes/remotes.js', async: true, condition: function() { return !!document.body.classList; } }
+]});
+    </script>
+    </body>
+</html>
