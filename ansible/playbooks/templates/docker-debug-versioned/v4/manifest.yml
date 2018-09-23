@@ -48,10 +48,10 @@ spec:
       volumes:
         - name: www-data
           configMap:
-            name: {{ (kube_resource_configmaps['www-data-dir-configmap']) | k8s_config_resource_name }}
+            name: {{ (kube_resource_configmaps['www-data-configmap']) | k8s_config_resource_name }}
         - name: tls
           secret:
-            name: {{ (kube_resource_secrets['tls-secrets']) | k8s_config_resource_name }}
+            secretName: {{ (kube_resource_secrets['tls-secrets']) | k8s_config_resource_name }}
             defaultMode: 0440
 ---
 apiVersion: v1
