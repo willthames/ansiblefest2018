@@ -1,6 +1,26 @@
 % Making Kubernetes Easy With Ansible
 % Will Thames, Skedulo
-%# October 2018
+% October 2018
+
+---
+
+<div class="intro">
+<h3>How did you get started with Ansible?</h3>
+
+I saw a post by Michael Dehaan about a new configuration management system
+and thought "here we go, just what the world needs, yet another CM"
+
+I was working at a banking/insurance company with locked down application
+servers with no root access or agents allowed. I had ssh and python though...
+
+<h3>How long have you been using it?</h3>
+
+My first commit was July 2012&mdash;so some time around then
+
+<h3>What's your favourite thing to do when you Ansible?</h3>
+
+Mostly Kubernetes these days! But AWS works pretty well too.
+</div>
 
 ---
 
@@ -13,25 +33,12 @@
 
 ---
 
-# Contents
-
-- Introduction
-- About Kubernetes
-- Managing Kubernetes with Ansible
-
----
-
 # Motivation
 
----
-
-FIXME: replace with Ansible's slide
-
-# About me
-
-- Ansible contributor since July 2012
-- Author of ansible-lint, ansible-review, ansible-inventory-grapher
-- Mostly AWS-related contributions but lately a lot of Kubernetes
+- Minimise effort to add new applications and environments
+- Maintain configuration in source control in a secure fashion
+- Use configuration to manage clusters
+- Get the best out of Ansible
 
 ---
 
@@ -45,7 +52,6 @@ FIXME: replace with Ansible's slide
 
 <div class="image-right"><img src="images/skedulo.png"></div>
 
-
 ---
 
 # Live Demo
@@ -54,6 +60,10 @@ FIXME: replace with Ansible's slide
 - Demonstrate some of the best practices for Kubernetes configuration management
 - Starts now! (10+ minutes to fire up EKS)
 
+<div class="footer">
+Demo code: <a href="https://github.com/willthames/ansiblefest2018">https://github.com/willthames/ansiblefest2018</a>
+</div>
+
 ---
 
 # Live Demo architecture
@@ -61,8 +71,6 @@ FIXME: replace with Ansible's slide
 <div class="image-center"><img src="images/eks.png"></div>
 
 ---
-
-
 
 # What's not in this talk
 
@@ -80,22 +88,23 @@ use GKE, AKS, EKS or something like kops
 
 # About Kubernetes
 
-* Kubernetes is a management framework for distributed clusters
-  of container instances
+* Kubernetes is a platform for managing, scaling and deploying
+  applications running on containers across distributed networks
 * Kubernetes continually runs a reconciliation loop to ensure
   the cluster is in the desired state and corrects it if possible
-  if not
 
 ---
 
-# Important Kubernetes resources
+# Kubernetes as a common language
 
-* Pod - unit of compute containing one or more containers,
-  each running their own particular image version with their
-  individual configuration
-* Deployments - ensure that the right number of replicas of
-  a Pod are running, and that upgrades from one Pod specification
-  to a new one are handled correctly
+Kubernetes allows the specification of common characteristics
+of applications and services:
+
+* an application's deployable and its associated configuration (`Pod`)
+* how many replicas should run, and where;
+  how should updates be handled (`Deployment`/`DaemonSet`)
+* what endpoints should be exposed to the applications (`Service`)
+* what traffic should go to the `Service` (`Ingress`)
 
 <aside class="notes">
 * e.g. environment variables, volume mounts
@@ -104,24 +113,29 @@ use GKE, AKS, EKS or something like kops
 
 ---
 
-# Important Kubernetes resources
+# Kubernetes as a common language
 
-* ConfigMap - one or more configuration items in a dict. Useful
-  for setting environment variables or declaring entire configuration
-  files for a Pod
-* Secret - similar to ConfigMap but better protected from casual view.
-* Service - allows inbound traffic from other Pods
-* Ingress - allows inbound traffic to a Service from outside the cluster
+* `ConfigMap`&mdash;one or more configuration items in key-value form. Useful
+  for setting environment variables or specifying the entire contents
+  of one or more files for a `Pod`
+* `Secret`&mdash;similar to `ConfigMap` but better protected from casual view.
 
 ---
 
-# Welcome to the bleeding edge
+# Kubernetes resource definitions
 
-- A lot of the functionality used here is in Ansible 2.7
-- Some of the functionality mentioned here won't be out until 2.8
-- EKS communication relies on kubernetes python client 7.X FIXME
-- Features from openshift 0.7.Y are also mentioned FIXME
-
+* Resource definitions are in YAML form
+  ```
+  apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: my-config-map
+    namespace: my-namespace
+  data:
+    hello: world
+  ```
+* Typically managed by the `kubectl` command line tool
+  `kubectl apply -f resource.yml`
 
 ---
 
@@ -153,14 +167,19 @@ be considered a bug
 
 # Are there reasons to use kubectl?
 
-- `kubectl` does validation (`k8s` should in 2.8)
-- `kubectl` can append hashes to ConfigMaps and Secrets to make
-  them immutable (`k8s` should have this in 2.8)
+- `kubectl` does validation
+- `kubectl` can append hashes to `ConfigMap`s and `Secret`s to make
+  them immutable
 - ad-hoc tasks:
   ```
   kubectl get configmap -n some-namespace some-config-map
-  ansible -m k8s_facts -a 'namespace=some-namespace kind=ConfigMap api_version=v1 name=some-config-map' localhost
+  ansible -m k8s_facts -a 'namespace=some-namespace kind=ConfigMap \
+    api_version=v1 name=some-config-map' localhost
   ```
+<aside class="notes">
+immutable ConfigMaps aren't possible with kubectl in a declarative
+way yet
+</aside>
 
 ---
 
@@ -242,9 +261,9 @@ Read more: <a href="http://willthames.github.io/2017/10/31/making-the-most-of-in
 
 * Runner pattern uses hosts declarations like `hosts: "{{ env }}-{{ app }}-runner"`
   with e.g. `-e env=test -e app=web`.
-* Suitable inventory group hierarchies allow such hosts to gather their inventory
-  from groups such as `test`, `web` and `test-web`, as well as the `runner` group
-* Set `ansible_connection: local` and `ansible_python_interpreter: "{{ ansible_playbook_python }}"`
+* inventory hierarchies allow runners to gather their inventory
+  from groups such as `test`, `web` and `test-web`
+* Set `ansible_connection: local` and `ansible_python_interpreter:` `"{{ ansible_playbook_python }}"`
   in the `runner` group_vars file.
 
 ---
@@ -253,6 +272,11 @@ Read more: <a href="http://willthames.github.io/2017/10/31/making-the-most-of-in
 
 <div class="image-left"><image src="images/flat.png"></div>
 <div class="image-right"><image src="images/hierarchical.png"></div>
+
+<aside class="notes">
+Allows variables to be reused across applications in resource
+definitions
+</aside>
 
 ---
 
@@ -338,6 +362,9 @@ line.
 
 # Secrets
 
+- We use `ansible-vault` for all of our secrets.
+- Kubernetes expects secrets to be base64 encoded
+- Use `no_log` with the `k8s` module when uploading  secrets
 
 <ul class="tip">
 <li>Use `ansible-vault encrypt_string` to encrypt each secret inline</li>
@@ -346,46 +373,22 @@ line.
 <li>Don't forget to use `echo -n $secret | ansible-vault encrypt_string` to
   avoid encrypting the newline!
 </ul>
-- We use `ansible-vault` for all of our secrets.
-- Kubernetes expects secrets to be base64 encoded
-- Use `no_log` with the `k8s` module when uploading  secrets
 <ul class="danger">
-<li>vaulting whole secrets files - this causes huge
-  diffs on change</li>
+<li>Avoid vaulting whole variables files</li>
 </ul>
 <aside class="notes">
 the whole file changes for a single byte difference
 </aside>
 ---
 
-# Secrets in environment variables
+# `Secret`s in environment variables
 
-- Use a Secret resource to store secret environment variables
-- Use envFrom if you then want to include all the secrets from that resource
-
-# A Secret manifest
-```
-apiVersion: v1
-kind: Secret
-metadata:
-  name: my-secret-env
-  namespace: my-namespace
-data:
-  {{ my_secret_env | to_nice_yaml(indent=2) | indent(2) }}
----
-kind: Deployment
-spec:
-  template:
-    spec:
-      containers:
-      - envFrom:
-          - secretKeyRef:
-              name: my-secret-env
-```
+- Use a `Secret` resource to store secret environment variables
+- Use `envFrom` if you then want to include all the secrets from that resource
 
 ---
 
-# Secrets in environment variables
+# `Secret`s in environment variables
 
 ```
 key1: !vault |
@@ -398,16 +401,85 @@ key1: !vault |
 my_secret_env:
   KEY1: "{{ key1 | b64encode }}"
 ```
+
+---
+
+# A `Secret` manifest
+
+```
+apiVersion: v1
+kind: Secret
+metadata:
+  name: my-secret-env
+  namespace: my-namespace
+data:
+  {{ my_secret_env | to_nice_yaml(indent=2) | indent(2) }}
+```
+
+---
+
+# Using the `Secret`
+
+```
+---
+kind: Deployment
+spec:
+  template:
+    spec:
+      containers:
+      - envFrom:
+          - secretRef:
+              name: my-secret-env
+```
+
+---
+
+# Why Immutable `ConfigMap`s?
+
+* Updating a `ConfigMap` used in a `Deployment` will
+  not update the `Pod`s in that `Deployment`
+* Rolling back to a previous `Deployment` will not roll back
+  the `ConfigMap` or `Secret`s changes
+
+---
+
+# Immutable `ConfigMap`s
+
+* Name `ConfigMap`s based on a hash of its data
+* Reference this `ConfigMap` name in a `Deployment`
+* Changing a existing `ConfigMap` will change its
+  name, triggering `Pod` updates
+* Rolling back a `Deployment` will then roll back to the old config
+* Use `append_hash` to generate immutable `ConfigMaps`
+* Use `k8s_config_resource_name` filter plugin to reference
+  such `ConfigMap`s
+
+<aside class="notes">
+Nothing yet garbage collects orphaned ConfigMaps and Secrets
+</aside>
+
+---
+
+# Demo
+
+Scenario:
+
+* We're practising Continuous Delivery with Blue/Green Deployments and feature flags
+* Upgrade application
+* Enable feature flag
+* Realise feature is buggy
+* Disable feature flag
+
 ---
 
 # Modules
 
-* `k8s` - main module for managing Kubernetes resources.
-* `k8s_facts` - useful for run-time querying of resources
-* `aws_eks_cluster` - manages AWS Elastic Kubernetes Service clusters
-* `azure_rm_aks` - manages Azure Kubernetes Service clusters
-* `gcp_container_cluster` - manages Google Kubernetes Engine clusters
-* `gcp_container_nodepool` - manages GKE node pools
+* `k8s`&mdash;main module for managing Kubernetes resources.
+* `k8s_facts`&mdash;useful for run-time querying of resources
+* `aws_eks_cluster`&mdash;manages AWS EKS clusters
+* `azure_rm_aks`&mdash;manages Azure Kubernetes Service clusters
+* `gcp_container_cluster` and `gcp_container_nodepool`&mdash;manage GKE
+  clusters and node pools
 
 
 ---
@@ -417,7 +489,7 @@ my_secret_env:
 - uses the same manifest definitions as kubectl
 - can take inline resource `definition`s, or `src` from file
 - inline definitions work well with `template` lookup
-  `definition: "{{ lookup('template', 'path/to/resource.j2') | from_yaml }}"
+  `definition: "{{ lookup('template',` `'path/to/resource.j2') | from_yaml }}"`
 - invoke once with a manifest containing a list of resources, or invoke
   in a `loop` over a list of resources
 - copes with Custom Resource Definitions (2.7)
@@ -428,24 +500,33 @@ Main difference is how `changed` behaves.
 
 ---
 
-# Plugins
-
-* `yaml` stdout callback plugin is great for having output match input
-* `k8s` lookup plugin returns information about Kubernetes resources
-* `from_yaml` and `from_yaml_all` (2.7) useful for feeding templates into
-  modules
-* `to_nice_yaml` and `indent` are helpful for outputting ansible data structures
-  into kubernetes manifest form
-* `b64encode` encodes secrets in base64
-
----
-
 # Upcoming features of the `k8s` module
 
-* `append_hash` will enable immutable ConfigMaps and Secrets (likely 2.8)
+* `append_hash` will enable immutable `ConfigMap`s and `Secret`s (likely 2.8)
 * `validate` will return helpful warning and/or error messages if a resource manifest
   does not match the Kubernetes resource specification (likely 2.8)
 * `wait` will allow you to wait until the Kubernetes resources are actually in the
   desired state (hopefully 2.8)
 
+---
 
+# Plugins
+
+* `yaml` stdout callback plugin is great for having output match input
+* `k8s` lookup plugin returns information about Kubernetes resources
+* `from_yaml` and `from_yaml_all` (2.7) read from templates into
+  module data
+* `b64encode` encodes secrets in base64
+* `k8s_config_hash` and `k8s_config_resource_name` for immutable `ConfigMap`s (likely 2.8)
+
+<aside class="notes">
+I mentioned `to_nice_yaml` and `indent` earlier for converting
+data into kubernetes manifest form
+</aside>
+
+---
+
+# Thanks for listening
+
+* Slides: [https://willthames.github.io/ansiblefest2018](https://willthames.github.io/ansiblefest2018)
+* Code: [https://github.com/willthames/ansiblefest2018](https://github.com/willthames/ansiblefest2018)

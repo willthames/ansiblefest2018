@@ -1,9 +1,21 @@
 .reveal figcaption { display: none !important; }
 .reveal p, .reveal ul { text-align: left;}
 .reveal pre code { font-size: 24px; line-height: 1.2; }
-.reveal h1 { text-transform: none !important; font-size: 2em !important; }
-.reveal h1 code { font-weight: normal; letter-spacing: 0.8 }
+.reveal h1 { text-transform: none !important; font-size: 1.6em !important; }
 .reveal code { font-family: Latin Modern Mono Light,Source Code Pro,Monaco,monospace !important; }
+.reveal h1 code {
+  font-weight: normal;
+  letter-spacing: 0.8 !important;
+  font-family: Latin Modern Mono,Source Code Pro,Monaco,monospace !important;
+}
+
+.slides .intro {
+  font-size: 75%;
+}
+
+.slides .intro h3 {
+  text-align: left;
+}
 
 .slides .footer {
   position: absolute;
@@ -17,22 +29,22 @@
 }
 
 .slides ul {
-  width: 90%;
   list-style-position: outside;
+  width: 100%;
 }
 
 .slides li {
   padding-left: 0.2em;
 }
 
-.slides ul.tip, .slides ul.warn {
+.slides ul.tip, .slides ul.warn, .slides ul.danger {
   list-style-type: none;
 }
-.slides ul.tip li, .slides ul.warn li {
+.slides ul.tip li, .slides ul.warn li, .slides ul.danger li {
   padding-left: 0.2em;
 }
 
-.slides ul.tip li:before, .slides ul.warn li:before {
+.slides ul.tip li:before, .slides ul.warn li:before, .slides ul.danger li:before {
   font-family: 'FontAwesome';
   margin-left: -1.3em;
   width: 1.0em;
@@ -46,6 +58,10 @@
 
 .slides ul.warn li:before {
   content: '\f071';
+}
+
+.slides ul.danger li:before {
+  content: '\f1e2';
 }
 
 .slides div.image-left {
