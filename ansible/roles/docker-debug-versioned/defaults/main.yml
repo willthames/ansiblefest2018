@@ -1,6 +1,0 @@
-kube_resource_configmaps:
-  a-configmap: "{{ lookup('template', kube_resource_template_dir + 'a-configmap.yml') | from_yaml }}"
-kube_resource_secrets:
-  a-secrets: "{{ lookup('template', kube_resource_template_dir + 'a-secrets.yml') | from_yaml }}"
-  b-secrets: "{{ lookup('template', kube_resource_template_dir + 'b-secrets.yml') | from_yaml }}"
-kube_resource_manifest_files: "{{ query('fileglob', kube_resource_template_dir + '*manifest.yml') }}"

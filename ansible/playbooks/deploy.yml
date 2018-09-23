@@ -1,7 +1,4 @@
 - hosts: "{{ application }}-{{ env }}-runner"
   tasks:
     - include_role:
-        name: "{{ application }}"
-        public: yes
-    - include_role:
         name: "kube_resource"

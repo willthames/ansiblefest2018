@@ -11,3 +11,4 @@ container_image: willthames/docker_debug
 image_pull_policy: Always
 kube_resource_fqdn: "{{ application }}.{{ kube_domain_name }}"
 kube_domain_name: example.com
+kube_resource_template_dir: "{{ 'templates/' + application + '/' + version + '/' }}"

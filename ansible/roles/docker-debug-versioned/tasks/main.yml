@@ -1,3 +1,0 @@
-- name: Source application role
-  set_fact:
-    kube_resource_template_dir: "{{ 'templates/' + application + '/' + version + '/' }}"
