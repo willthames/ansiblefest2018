@@ -3,6 +3,9 @@
 <title>Docker Debug</title>
 <link rel="stylesheet" href="{{ url_for('static', filename=colour + '.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+{% if environs['ENABLE_BUGGY_FEATURE'] == 'True' %}
+<link rel="stylesheet" href="{{ url_for('static', filename='extras/shake.css') }}">
+{% endif %}
 </head>
 <body>
 <div class="header">
@@ -20,14 +23,5 @@
 {%- endfor %}
 </tbody>
 </table>
-
-<h2>Configuration File Contents</h2>
-
-The contents of the file with name <code>WWW_DATA</code> environment variable are
-
-<pre>
-{{ data }}
-</pre>
-
 </body>
 </html>

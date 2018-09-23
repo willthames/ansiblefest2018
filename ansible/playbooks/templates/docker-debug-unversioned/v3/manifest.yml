@@ -30,8 +30,6 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ kube_resource_name }}-env
-            - configMapRef:
-                name: www-data-env
             - secretRef:
                 name: {{ kube_resource_name }}-env
           readinessProbe:
@@ -41,7 +39,7 @@ spec:
             periodSeconds: 5
           volumeMounts:
             - name: www-data
-              mountPath: /app/www
+              mountPath: /app/static/extras
             - name: tls
               mountPath: /etc/ssl/
       volumes:
