@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ application }}
+  name: {{ kube_resource_name }}
   namespace: {{ kube_resource_namespace }}
   labels:
     {{ kube_deployment_labels | to_nice_yaml(indent=2) | indent(4) }}
@@ -16,7 +16,7 @@ spec:
         {{ kube_resource_labels | to_nice_yaml(indent=2) | indent(8) }}
     spec:
       containers:
-        - name: {{ application }}
+        - name: {{ kube_resource_name }}
           # Normally container tag would come from inventory but we want to show changes over time
           image: {{ (container_registry|default())|ternary(container_registry + "/", "") }}{{ container_image }}:green
           imagePullPolicy: {{ image_pull_policy }}
@@ -27,24 +27,29 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
-            - name: AN_ENV_VAR
-              valueFrom:
-                secretKeyRef:
-                  name: a-secret
-                  key: AN_ENV_VAR
           envFrom:
             - configMapRef:
-                name: a-configmap
+                name: {{ kube_resource_name }}-env
+            - secretRef:
+                name: {{ kube_resource_name }}-env
           readinessProbe:
             tcpSocket:
               port: 5000
-            initialDelaySeconds: 30
+            initialDelaySeconds: 5
             periodSeconds: 5
+          volumeMounts:
+            - name: tls
+              mountPath: /etc/ssl/
+      volumes:
+        - name: tls
+          secret:
+            secretName: {{ kube_resource_name }}-tls
+            defaultMode: 0600
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ application }}
+  name: {{ kube_resource_name }}
   namespace: {{ kube_resource_namespace }}
   labels:
     {{ kube_resource_labels | to_nice_yaml(indent=2) | indent(4) }}
@@ -64,7 +69,7 @@ spec:
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
-  name: {{ application }}
+  name: {{ kube_resource_name }}
   namespace: {{ kube_resource_namespace }}
 spec:
   rules:
@@ -73,5 +78,5 @@ spec:
       paths:
       - path: /
         backend:
-          serviceName: {{ application }}
+          serviceName: {{ kube_resource_name }}
           servicePort: 8080

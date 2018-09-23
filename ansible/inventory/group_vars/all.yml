@@ -1,10 +1,11 @@
+kube_resource_name: "{{ env }}-{{ application }}"
 kube_resource_labels:
   application: "{{ application }}"
   environment: "{{ env }}"
 kube_deployment_extra_labels:
   version: "{{ version }}"
 kube_deployment_labels: "{{ kube_resource_labels | combine(kube_deployment_extra_labels) }}"
-kube_deployment_replicas: 3
+kube_deployment_replicas: 5
 kube_resource_namespace: "{{ env }}"
 container_image: willthames/docker_debug
 image_pull_policy: Always

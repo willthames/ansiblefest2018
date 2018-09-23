@@ -18,7 +18,7 @@ spec:
       containers:
         - name: {{ kube_resource_name }}
           # Normally container tag would come from inventory but we want to show changes over time
-          image: {{ (container_registry|default())|ternary(container_registry + "/", "") }}{{ container_image }}:blue
+          image: {{ (container_registry|default())|ternary(container_registry + "/", "") }}{{ container_image }}:green
           imagePullPolicy: {{ image_pull_policy }}
           ports:
             - containerPort: 5000
@@ -30,6 +30,8 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ kube_resource_name }}-env
+            - configMapRef:
+                name: www-data-env
             - secretRef:
                 name: {{ kube_resource_name }}-env
           readinessProbe:
@@ -38,9 +40,14 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 5
           volumeMounts:
+            - name: www-data
+              mountPath: /app/www
             - name: tls
               mountPath: /etc/ssl/
       volumes:
+        - name: www-data
+          configMap:
+            name: www-data-dir
         - name: tls
           secret:
             secretName: {{ kube_resource_name }}-tls
