@@ -54,6 +54,20 @@ Mostly Kubernetes these days! But AWS works pretty well too.
 
 ---
 
+# Skedulo Platform
+
+- AWS underlying infrastructure built using terraform
+- Kubernetes 1.9 built using kops
+- Ansible for everything on top
+- 10s of applications
+
+<aside class="notes">
+We're lucky to be learning the lessons at 10s of applications
+in case we need 100s
+</aside>
+
+---
+
 # Live Demo
 
 - Create a brand new Kubernetes cluster in AWS' Elastic Kubernetes Service
@@ -230,10 +244,10 @@ metadata:
 
 # Hierarchical inventory
 
-* Some variables are the same across many applications within an environment
-* Some variables are the same across all environments for an application
-* Some variables can be composed from other variables
-* Some variables may need specific overrides for certain application/environment
+* Some properties are the same across many applications within an environment
+* Some properties are the same across all environments for an application
+* Some properties can be composed from other properties
+* Some properties may need specific overrides for certain application/environment
   combinations
 * All of these needs are met by inventory groups
 
@@ -292,6 +306,13 @@ definitions
 <div class="footer">
 Read more: <a href="http://willthames.github.io/2017/11/01/generating-inventory.html">Generating Inventory</a>
 </div>
+
+<aside class="notes">
+This takes the form of a host not being in a group that it needs to be in
+or a child group not belonging to a particular parent group - this is very
+easy to get wrong, and very hard to spot. ansible-inventory-grapher
+was originally written to help troubleshoot such issues, but less necessary now
+</aside>
 
 ---
 
@@ -438,8 +459,16 @@ spec:
 
 * Updating a `ConfigMap` used in a `Deployment` will
   not update the `Pod`s in that `Deployment`
-* Rolling back to a previous `Deployment` will not roll back
-  the `ConfigMap` or `Secret`s changes
+* Rolling back to a previous configuration will not cause
+  the `Pod`s to pick up the `ConfigMap` or `Secret`s changes
+* `kubectl rollout undo` for emergency purposes will only
+  roll back containers, not configuration
+
+<aside class="notes">
+Here the constraints are that the Deployment must change
+to pick up a new ConfigMap, but that won't happen if the
+ConfigMap changes but the Deployment doesn't
+</aside>
 
 ---
 
