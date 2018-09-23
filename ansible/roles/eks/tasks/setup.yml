@@ -98,6 +98,12 @@
     src: kube.config.j2
     dest: "{{ eks_kubeconfig }}"
 
+- name: install cache helper script
+  copy:
+    src: aws-iam-authenticator-with-cache
+    dest: "{{ eks_kubeconfig | dirname }}/aws-iam-authenticator-with-cache"
+    mode: 0755
+
 - name: add authentication configuration
   k8s:
     definition: "{{ lookup('template', role_path + '/templates/aws-auth-cm.yml') }}"

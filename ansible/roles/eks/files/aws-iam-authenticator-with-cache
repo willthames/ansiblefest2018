@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Only tested on OS X
+# From https://github.com/kubernetes-sigs/aws-iam-authenticator/issues/99#issue-332935986
+CACHE_FILE=${HOME}/.kube/aws-iam-authenticator-${AWS_PROFILE}.cache
+MAXTIME=800
+if [ -f $CACHE_FILE ]; then
+    TS_DB=$(stat -t "%s" ${CACHE_FILE} | cut -d' ' -f10 | tr -d '"')
+    AGE=$(( `date +%s` - $TS_DB ))
+    if [[ $AGE -le $MAXTIME ]]; then
+        cat ${CACHE_FILE}
+    else
+        aws-iam-authenticator "$@" | tee $CACHE_FILE
+    fi
+else
+    aws-iam-authenticator "$@" | tee $CACHE_FILE
+fi
