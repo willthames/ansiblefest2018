@@ -67,13 +67,11 @@
 .slides div.image-left {
   position: absolute;
   left: 10px;
-  bottom: 10%;
 }
 
 .slides div.image-right {
   position: absolute;
   right: 10px;
-  bottom: 10%;
 }
 
 .slides div.image-center {
@@ -81,7 +79,6 @@
   width: 100%;
   margin-left: auto;
   margin-right: auto;
-  bottom: 10%;
 }
 
 .slides section div img {

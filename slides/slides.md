@@ -86,20 +86,6 @@ Demo code: <a href="https://github.com/willthames/ansiblefest2018">https://githu
 
 ---
 
-# What's not in this talk
-
-- explicit comparisons with other Kubernetes configuration management (e.g. Helm)
-- explicit comparisons with other configuration management tools (chef, puppet, etc)
-- Much about Kubernetes *cluster* management
-- Add ons to Kubernetes
-- Datastore management
-
-<aside class="notes">
-use GKE, AKS, EKS or something like kops
-</aside>
-
----
-
 # About Kubernetes
 
 * Kubernetes is a platform for managing, scaling and deploying
@@ -153,15 +139,6 @@ of applications and services:
 
 ---
 
-# Ansible's Kubernetes strengths
-
-- Templating
-- Hierarchical inventory
-- Secrets management
-- Modules, lookup plugins, filter plugins
-
----
-
 # Anti-pattern: using kubectl in playbooks
 
 - `kubectl` is *awesome*
@@ -181,7 +158,8 @@ be considered a bug
 
 # Are there reasons to use kubectl?
 
-- `kubectl` does validation
+- `kubectl` does validation of resource definitions against their
+  specification
 - `kubectl` can append hashes to `ConfigMap`s and `Secret`s to make
   them immutable
 - ad-hoc tasks:
@@ -197,6 +175,15 @@ way yet
 
 ---
 
+# Ansible's Kubernetes strengths
+
+- Templating
+- Roles
+- Hierarchical inventory
+- Secrets management
+- Modules, lookup plugins, filter plugins
+---
+
 # Reuse
 
 - Our goal is to use as much common code for Kubernetes management
@@ -205,14 +192,16 @@ way yet
   resource manifests and ensures that Kubernetes meets those expectations
 - Ideally, one manifest template that works for most applications would be
   great, but harder.
-- At the very least, manifests should be reusable across all environments.
 
 ---
 
 # Templating
 
 * Templates are super-powerful
-* Use as few control structures as possible
+* Reuse resource definition files for all environments
+* Use a common language where possible - e.g. `{{ kube_resource_name }}`
+  `{{ kube_ingress_fqdn }}` across all applications
+* Avoid control structures where possible
   ```
   replicas = {% 5 if env == 'prod' else 1 %}
   ```
@@ -237,8 +226,19 @@ annotations:
 ```
 metadata:
   annotations:
-    {{ annotations | to_nice_yaml(indent=2) | indent=4 }}
+    {{ annotations | to_nice_yaml(indent=2) | indent(4) }}
 ```
+
+---
+
+# Roles
+
+* Roles are excellent for sharing a common set of tasks
+  across multiple playbooks
+* One role should be suitable for almost all Kubernetes
+  operations
+* We have moved from per-application roles to one generic
+  role for all but a couple of applications.
 
 ---
 
@@ -387,15 +387,15 @@ line.
 - Kubernetes expects secrets to be base64 encoded
 - Use `no_log` with the `k8s` module when uploading  secrets
 
+<ul class="danger">
+<li>Avoid vaulting whole variables files</li>
+</ul>
 <ul class="tip">
 <li>Use `ansible-vault encrypt_string` to encrypt each secret inline</li>
 </ul>
 <ul class="warn">
 <li>Don't forget to use `echo -n $secret | ansible-vault encrypt_string` to
   avoid encrypting the newline!
-</ul>
-<ul class="danger">
-<li>Avoid vaulting whole variables files</li>
 </ul>
 <aside class="notes">
 the whole file changes for a single byte difference

@@ -109,19 +109,6 @@ We’re lucky to be learning the lessons at 10s of applications in case we need 
 <img src="images/eks.png">
 </div>
 </section>
-<section id="whats-not-in-this-talk" class="slide level1">
-<h1>What’s not in this talk</h1>
-<ul>
-<li>explicit comparisons with other Kubernetes configuration management (e.g. Helm)</li>
-<li>explicit comparisons with other configuration management tools (chef, puppet, etc)</li>
-<li>Much about Kubernetes <em>cluster</em> management</li>
-<li>Add ons to Kubernetes</li>
-<li>Datastore management</li>
-</ul>
-<aside class="notes">
-use GKE, AKS, EKS or something like kops
-</aside>
-</section>
 <section id="about-kubernetes" class="slide level1">
 <h1>About Kubernetes</h1>
 <ul>
@@ -166,15 +153,6 @@ data:
 <li><p>Typically managed by the <code>kubectl</code> command line tool <code>kubectl apply -f resource.yml</code></p></li>
 </ul>
 </section>
-<section id="ansibles-kubernetes-strengths" class="slide level1">
-<h1>Ansible’s Kubernetes strengths</h1>
-<ul>
-<li>Templating</li>
-<li>Hierarchical inventory</li>
-<li>Secrets management</li>
-<li>Modules, lookup plugins, filter plugins</li>
-</ul>
-</section>
 <section id="anti-pattern-using-kubectl-in-playbooks" class="slide level1">
 <h1>Anti-pattern: using kubectl in playbooks</h1>
 <ul>
@@ -191,7 +169,7 @@ if it has a feature that the <code>k8s</code> module does not, that can be consi
 <section id="are-there-reasons-to-use-kubectl" class="slide level1">
 <h1>Are there reasons to use kubectl?</h1>
 <ul>
-<li><code>kubectl</code> does validation</li>
+<li><code>kubectl</code> does validation of resource definitions against their specification</li>
 <li><code>kubectl</code> can append hashes to <code>ConfigMap</code>s and <code>Secret</code>s to make them immutable</li>
 <li><p>ad-hoc tasks:</p>
 <pre><code>kubectl get configmap -n some-namespace some-config-map
@@ -202,20 +180,31 @@ immutable ConfigMaps aren’t possible with kubectl in a declarative way yet
 </aside></li>
 </ul>
 </section>
+<section id="ansibles-kubernetes-strengths" class="slide level1">
+<h1>Ansible’s Kubernetes strengths</h1>
+<ul>
+<li>Templating</li>
+<li>Roles</li>
+<li>Hierarchical inventory</li>
+<li>Secrets management</li>
+<li><h2 id="modules-lookup-plugins-filter-plugins">Modules, lookup plugins, filter plugins</h2></li>
+</ul>
+</section>
 <section id="reuse" class="slide level1">
 <h1>Reuse</h1>
 <ul>
 <li>Our goal is to use as much common code for Kubernetes management as possible.</li>
 <li>A single Ansible role that takes a set of resource manifests and ensures that Kubernetes meets those expectations</li>
 <li>Ideally, one manifest template that works for most applications would be great, but harder.</li>
-<li>At the very least, manifests should be reusable across all environments.</li>
 </ul>
 </section>
 <section id="templating" class="slide level1">
 <h1>Templating</h1>
 <ul>
 <li>Templates are super-powerful</li>
-<li><p>Use as few control structures as possible</p>
+<li>Reuse resource definition files for all environments</li>
+<li>Use a common language where possible - e.g. <code>{{ kube_resource_name }}</code> <code>{{ kube_ingress_fqdn }}</code> across all applications</li>
+<li><p>Avoid control structures where possible</p>
 <pre><code>replicas = {% 5 if env == &#39;prod&#39; else 1 %}</code></pre>
 <p>vs</p>
 <pre><code>replicas = {{ kube_deployment_replicas }}</code></pre></li>
@@ -229,7 +218,15 @@ immutable ConfigMaps aren’t possible with kubectl in a declarative way yet
   this_one: is only in some environments</code></pre>
 <pre><code>metadata:
   annotations:
-    {{ annotations | to_nice_yaml(indent=2) | indent=4 }}</code></pre>
+    {{ annotations | to_nice_yaml(indent=2) | indent(4) }}</code></pre>
+</section>
+<section id="roles" class="slide level1">
+<h1>Roles</h1>
+<ul>
+<li>Roles are excellent for sharing a common set of tasks across multiple playbooks</li>
+<li>One role should be suitable for almost all Kubernetes operations</li>
+<li>We have moved from per-application roles to one generic role for all but a couple of applications.</li>
+</ul>
 </section>
 <section id="hierarchical-inventory" class="slide level1">
 <h1>Hierarchical inventory</h1>
@@ -351,6 +348,11 @@ This is the same inventory. Although it seems longer and more complicated, addin
 <li>Kubernetes expects secrets to be base64 encoded</li>
 <li>Use <code>no_log</code> with the <code>k8s</code> module when uploading secrets</li>
 </ul>
+<ul class="danger">
+<li>
+Avoid vaulting whole variables files
+</li>
+</ul>
 <ul class="tip">
 <li>
 Use <code>ansible-vault encrypt_string</code> to encrypt each secret inline
@@ -359,11 +361,6 @@ Use <code>ansible-vault encrypt_string</code> to encrypt each secret inline
 <ul class="warn">
 <li>
 Don’t forget to use <code>echo -n $secret | ansible-vault encrypt_string</code> to avoid encrypting the newline!
-</ul>
-<ul class="danger">
-<li>
-Avoid vaulting whole variables files
-</li>
 </ul>
 <aside class="notes">
 the whole file changes for a single byte difference
