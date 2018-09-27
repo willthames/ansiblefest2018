@@ -3,5 +3,5 @@ boto3
 botocore
 kubernetes-validate >= 1.11.5
 git+https://github.com/kubernetes-client/python
-git+https://github.com/willthames/openshift-restclient-python@loosen_kubernetes_restriction
+git+https://github.com/willthames/openshift-restclient-python@all_the_merges
 git+https://github.com/ansible/ansible@stable-2.7

@@ -3,3 +3,16 @@
 
   roles:
     - eks
+
+  tasks:
+    - name: ensure namespace exists
+      k8s:
+        api_version: v1
+        kind: Namespace
+        name: "{{ kube_resource_namespace }}"
+        state: present
+
+    - name: create an ansible shell inside the cluster
+      k8s:
+        definition: "{{ item }}"
+      loop: "{{ lookup('template', playbook_dir + '/templates/ansible-shell/manifest.yml') | from_yaml_all | list }}"

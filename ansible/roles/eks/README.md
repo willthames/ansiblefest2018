@@ -40,3 +40,5 @@ https://docs.aws.amazon.com/eks/latest/userguide/getting-started.html#eks-prereq
 Very very bleeding edge right now (should be fixed soonish)
 * openshift from https://github.com/openshift/openshift-restclient-python/pull/196
 * kubernetes python client with base updated to https://github.com/kubernetes-client/python-base/pull/75/files
+
+Use `pip install -r requirements.txt` to install suitable versions

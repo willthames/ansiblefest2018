@@ -2,6 +2,10 @@
   k8s:
     src: "{{ role_path + '/templates/manifest.yml' }}"
 
+- name: pause for 15 seconds to wait for ELB
+  pause:
+    seconds: 15
+
 - name: Obtain ELBs
   elb_classic_lb_facts:
     region: "{{ eks_region }}"
