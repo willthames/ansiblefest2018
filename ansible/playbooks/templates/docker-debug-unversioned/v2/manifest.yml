@@ -41,9 +41,14 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 5
           volumeMounts:
+            - name: www-data
+              mountPath: /app/static/extras
             - name: tls
               mountPath: /etc/ssl/
       volumes:
+        - name: www-data
+          configMap:
+            name: {{ kube_resource_name }}-www-data
         - name: tls
           secret:
             secretName: {{ kube_resource_name }}-tls
