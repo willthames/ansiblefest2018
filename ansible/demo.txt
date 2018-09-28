@@ -1,0 +1,15 @@
+export K8S_AUTH_KUBECONFIG=~/.kube/ansiblefest2018.config
+$NOTI ansible-playbook playbooks/eks.yml -vv -e @overrides.yml -e env=test
+kubectl --kubeconfig ~/.kube/ansiblefest2018.config exec -it -n test ansible-shell sh
+ansible-playbook playbooks/deploy.yml -e application=docker-debug-unversioned -e env=test -e version=v1 -vv -e @overrides.yml
+ansible-playbook playbooks/deploy.yml -e application=docker-debug-unversioned -e env=test -e version=v2 -vv -e @overrides.yml
+ansible-playbook playbooks/deploy.yml -e application=docker-debug-unversioned -e env=test -e version=v3 -vv -e @overrides.yml
+ansible-playbook playbooks/deploy.yml -e application=docker-debug-unversioned -e env=test -e version=v4 -vv -e @overrides.yml
+PATCH='{"spec":{"template":{"metadata":{"labels":{"reload":"'$(date +%Y%m%d-%H%M%S)'"}}}}}'
+kubectl patch -n test deploy test-docker-debug-unversioned -p "$PATCH"
+ansible-playbook playbooks/deploy.yml -e application=docker-debug-unversioned -e env=test -e version=v3 -vv -e @overrides.yml
+PATCH='{"spec":{"template":{"metadata":{"labels":{"reload":"'$(date +%Y%m%d-%H%M%S)'"}}}}}'
+kubectl patch -n test deploy test-docker-debug-unversioned -p "$PATCH"
+ansible-playbook playbooks/deploy.yml -e application=docker-debug-unversioned -e env=test -e version=v3 -vv -e @overrides.yml
+ansible-playbook playbooks/deploy.yml -e application=docker-debug-unversioned -e env=test -e version=v4 -vv -e @overrides.yml
+ansible-playbook playbooks/eks.yml -vv -e @overrides.yml -e eks_action=teardown

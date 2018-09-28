@@ -56,11 +56,12 @@ metadata:
   name: ansible-shell
   namespace: {{ kube_resource_namespace }}
 spec:
+  securityContext:
+    runAsUser: 1000
   containers:
     - name: ansible-shell
       # Normally container tag would come from inventory but we want to show changes over time
-      image: willthames/ansible-kube-demo-shell
-      imagePullPolicy: Always
+      image: willthames/ansible-kube-demo-shell:latest
       stdin: true
       tty: true
 
