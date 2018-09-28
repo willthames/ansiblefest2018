@@ -46,7 +46,7 @@ How long have you been using it?
 <h3>
 What’s your favourite thing to do when you Ansible?
 </h3>
-<p>Mostly Kubernetes these days! But AWS works pretty well too.</p>
+<p>Mostly Kubernetes these days! But AWS works pretty well too</p>
 </div>
 </section>
 <section id="making-kubernetes-easy-with-ansible" class="slide level1">
@@ -136,7 +136,7 @@ We’re lucky to be learning the lessons at 10s of applications in case we need 
 <h1>Kubernetes as a common language</h1>
 <ul>
 <li><code>ConfigMap</code>—one or more configuration items in key-value form. Useful for setting environment variables or specifying the entire contents of one or more files for a <code>Pod</code></li>
-<li><code>Secret</code>—similar to <code>ConfigMap</code> but better protected from casual view.</li>
+<li><code>Secret</code>—similar to <code>ConfigMap</code> but better protected from casual view</li>
 </ul>
 </section>
 <section id="kubernetes-resource-definitions" class="slide level1">
@@ -162,6 +162,7 @@ data:
 </ul>
 <div class="footer">
 <p><sup>†</sup><a href="http://willthames.github.io/2016/09/21/using-command-and-shell-in-ansible.html"> Using Ansible’s <code>shell</code> and <code>command</code> modules properly</a></p>
+</div>
 <aside class="notes">
 if it has a feature that the <code>k8s</code> module does not, that can be considered a bug
 </aside>
@@ -172,8 +173,8 @@ if it has a feature that the <code>k8s</code> module does not, that can be consi
 <li><code>kubectl</code> does validation of resource definitions against their specification</li>
 <li><code>kubectl</code> can append hashes to <code>ConfigMap</code>s and <code>Secret</code>s to make them immutable</li>
 <li><p>ad-hoc tasks:</p>
-<pre><code>kubectl get configmap -n some-namespace some-config-map
-ansible -m k8s_facts -a &#39;namespace=some-namespace kind=ConfigMap \
+<pre><code>kubectl get configmap -n some-namespace some-config-map</code></pre>
+<pre><code>ansible -m k8s_facts -a &#39;namespace=some-namespace kind=ConfigMap \
   api_version=v1 name=some-config-map&#39; localhost</code></pre>
 <aside class="notes">
 immutable ConfigMaps aren’t possible with kubectl in a declarative way yet
@@ -187,15 +188,15 @@ immutable ConfigMaps aren’t possible with kubectl in a declarative way yet
 <li>Roles</li>
 <li>Hierarchical inventory</li>
 <li>Secrets management</li>
-<li><h2 id="modules-lookup-plugins-filter-plugins">Modules, lookup plugins, filter plugins</h2></li>
+<li>Modules, lookup plugins, filter plugins</li>
 </ul>
 </section>
 <section id="reuse" class="slide level1">
 <h1>Reuse</h1>
 <ul>
-<li>Our goal is to use as much common code for Kubernetes management as possible.</li>
+<li>Our goal is to use as much common code for Kubernetes management as possible</li>
 <li>A single Ansible role that takes a set of resource manifests and ensures that Kubernetes meets those expectations</li>
-<li>Ideally, one manifest template that works for most applications would be great, but harder.</li>
+<li>Ideally, one manifest template that works for most applications would be great, but harder</li>
 </ul>
 </section>
 <section id="templating" class="slide level1">
@@ -225,7 +226,7 @@ immutable ConfigMaps aren’t possible with kubectl in a declarative way yet
 <ul>
 <li>Roles are excellent for sharing a common set of tasks across multiple playbooks</li>
 <li>One role should be suitable for almost all Kubernetes operations</li>
-<li>We have moved from per-application roles to one generic role for all but a couple of applications.</li>
+<li>We have moved from per-application roles to one generic role for all but a couple of applications</li>
 </ul>
 </section>
 <section id="hierarchical-inventory" class="slide level1">
@@ -258,9 +259,9 @@ immutable ConfigMaps aren’t possible with kubectl in a declarative way yet
 <section id="using-the-runner-pattern" class="slide level1">
 <h1>Using the runner pattern</h1>
 <ul>
-<li>Runner pattern uses hosts declarations like <code>hosts: &quot;{{ env }}-{{ app }}-runner&quot;</code> with e.g. <code>-e env=test -e app=web</code>.</li>
+<li>Runner pattern uses hosts declarations like <code>hosts: &quot;{{ env }}-{{ app }}-runner&quot;</code> with e.g. <code>-e env=test -e app=web</code></li>
 <li>inventory hierarchies allow runners to gather their inventory from groups such as <code>test</code>, <code>web</code> and <code>test-web</code></li>
-<li>Set <code>ansible_connection: local</code> and <code>ansible_python_interpreter:</code> <code>&quot;{{ ansible_playbook_python }}&quot;</code> in the <code>runner</code> group_vars file.</li>
+<li>Set <code>ansible_connection: local</code> and <code>ansible_python_interpreter:</code> <code>&quot;{{ ansible_playbook_python }}&quot;</code> in the <code>runner</code> group_vars file</li>
 </ul>
 </section>
 <section id="flat-vs-hierarchical-inventory" class="slide level1">
@@ -344,7 +345,7 @@ This is the same inventory. Although it seems longer and more complicated, addin
 <section id="secrets" class="slide level1">
 <h1>Secrets</h1>
 <ul>
-<li>We use <code>ansible-vault</code> for all of our secrets.</li>
+<li>We use <code>ansible-vault</code> for all of our secrets</li>
 <li>Kubernetes expects secrets to be base64 encoded</li>
 <li>Use <code>no_log</code> with the <code>k8s</code> module when uploading secrets</li>
 </ul>
@@ -446,7 +447,7 @@ Nothing yet garbage collects orphaned ConfigMaps and Secrets
 <section id="modules" class="slide level1">
 <h1>Modules</h1>
 <ul>
-<li><code>k8s</code>—main module for managing Kubernetes resources.</li>
+<li><code>k8s</code>—main module for managing Kubernetes resources</li>
 <li><code>k8s_facts</code>—useful for run-time querying of resources</li>
 <li><code>aws_eks_cluster</code>—manages AWS EKS clusters</li>
 <li><code>azure_rm_aks</code>—manages Azure Kubernetes Service clusters</li>
@@ -463,7 +464,7 @@ Nothing yet garbage collects orphaned ConfigMaps and Secrets
 <li>copes with Custom Resource Definitions (2.7)</li>
 </ul>
 <aside class="notes">
-Main difference is how <code>changed</code> behaves.
+Main difference is how <code>changed</code> behaves
 </aside>
 </section>
 <section id="upcoming-features-of-the-k8s-module" class="slide level1">

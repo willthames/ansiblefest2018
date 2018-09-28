@@ -19,7 +19,7 @@ My first commit was July 2012&mdash;so some time around then
 
 <h3>What's your favourite thing to do when you Ansible?</h3>
 
-Mostly Kubernetes these days! But AWS works pretty well too.
+Mostly Kubernetes these days! But AWS works pretty well too
 </div>
 
 ---
@@ -118,7 +118,7 @@ of applications and services:
 * `ConfigMap`&mdash;one or more configuration items in key-value form. Useful
   for setting environment variables or specifying the entire contents
   of one or more files for a `Pod`
-* `Secret`&mdash;similar to `ConfigMap` but better protected from casual view.
+* `Secret`&mdash;similar to `ConfigMap` but better protected from casual view
 
 ---
 
@@ -148,6 +148,7 @@ of applications and services:
 <div class="footer">
 <sup>&dagger;</sup><a href="http://willthames.github.io/2016/09/21/using-command-and-shell-in-ansible.html">
 Using Ansible's `shell` and `command` modules properly</a>
+</div>
 
 <aside class="notes">
 if it has a feature that the `k8s` module does not, that can
@@ -165,6 +166,9 @@ be considered a bug
 - ad-hoc tasks:
   ```
   kubectl get configmap -n some-namespace some-config-map
+  ```
+
+  ```
   ansible -m k8s_facts -a 'namespace=some-namespace kind=ConfigMap \
     api_version=v1 name=some-config-map' localhost
   ```
@@ -182,16 +186,17 @@ way yet
 - Hierarchical inventory
 - Secrets management
 - Modules, lookup plugins, filter plugins
+
 ---
 
 # Reuse
 
 - Our goal is to use as much common code for Kubernetes management
-  as possible.
+  as possible
 - A single Ansible role that takes a set of
   resource manifests and ensures that Kubernetes meets those expectations
 - Ideally, one manifest template that works for most applications would be
-  great, but harder.
+  great, but harder
 
 ---
 
@@ -238,7 +243,7 @@ metadata:
 * One role should be suitable for almost all Kubernetes
   operations
 * We have moved from per-application roles to one generic
-  role for all but a couple of applications.
+  role for all but a couple of applications
 
 ---
 
@@ -274,11 +279,11 @@ Read more: <a href="http://willthames.github.io/2017/10/31/making-the-most-of-in
 # Using the runner pattern
 
 * Runner pattern uses hosts declarations like `hosts: "{{ env }}-{{ app }}-runner"`
-  with e.g. `-e env=test -e app=web`.
+  with e.g. `-e env=test -e app=web`
 * inventory hierarchies allow runners to gather their inventory
   from groups such as `test`, `web` and `test-web`
 * Set `ansible_connection: local` and `ansible_python_interpreter:` `"{{ ansible_playbook_python }}"`
-  in the `runner` group_vars file.
+  in the `runner` group_vars file
 
 ---
 
@@ -383,7 +388,7 @@ line.
 
 # Secrets
 
-- We use `ansible-vault` for all of our secrets.
+- We use `ansible-vault` for all of our secrets
 - Kubernetes expects secrets to be base64 encoded
 - Use `no_log` with the `k8s` module when uploading  secrets
 
@@ -503,7 +508,7 @@ Scenario:
 
 # Modules
 
-* `k8s`&mdash;main module for managing Kubernetes resources.
+* `k8s`&mdash;main module for managing Kubernetes resources
 * `k8s_facts`&mdash;useful for run-time querying of resources
 * `aws_eks_cluster`&mdash;manages AWS EKS clusters
 * `azure_rm_aks`&mdash;manages Azure Kubernetes Service clusters
@@ -524,7 +529,7 @@ Scenario:
 - copes with Custom Resource Definitions (2.7)
 
 <aside class="notes">
-Main difference is how `changed` behaves.
+Main difference is how `changed` behaves
 </aside>
 
 ---
