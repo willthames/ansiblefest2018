@@ -33,15 +33,6 @@ Mostly Kubernetes these days! But AWS works pretty well too
 
 ---
 
-# Motivation
-
-- Minimise effort to add new applications and environments
-- Maintain configuration in source control in a secure fashion
-- Use configuration to manage clusters
-- Get the best out of Ansible
-
----
-
 # About Skedulo
 
 - Skedulo is the platform for intelligent mobile workforce management
@@ -59,20 +50,25 @@ Mostly Kubernetes these days! But AWS works pretty well too
 - AWS underlying infrastructure built using terraform
 - Kubernetes 1.9 built using kops
 - Ansible for everything on top
+- AWX for deployments
 - 10s of applications
 
 <aside class="notes">
 We're lucky to be learning the lessons at 10s of applications
 in case we need 100s
+
+This cluster was built before EKS existed, we were waiting until
+we were at 1.10 before deciding whether to go to EKS. At the moment
+the benefits aren't clear.
 </aside>
 
 ---
 
 # Live Demo
 
-- Create a brand new Kubernetes cluster in AWS' Elastic Kubernetes Service
-- Demonstrate some of the best practices for Kubernetes configuration management
-- Starts now! (10+ minutes to fire up EKS)
+Starts now! (10+ minutes to fire up EKS)
+
+<div class="image-center"><img src="images/eks.png"></div>
 
 <div class="footer">
 Demo code: <a href="https://github.com/willthames/ansiblefest2018">https://github.com/willthames/ansiblefest2018</a>
@@ -80,9 +76,13 @@ Demo code: <a href="https://github.com/willthames/ansiblefest2018">https://githu
 
 ---
 
-# Live Demo architecture
+# Live demo details
 
-<div class="image-center"><img src="images/eks.png"></div>
+- Create a brand new Kubernetes cluster in AWS' Elastic Kubernetes Service
+- Creates Virtual Private Cloud
+- Creates Auto Scaling Group for worker nodes
+- Demonstrate some of the best practices for Kubernetes configuration management
+- From zero to ready-to-go cluster all in Ansible
 
 ---
 
@@ -179,16 +179,6 @@ way yet
 
 ---
 
-# Ansible's Kubernetes strengths
-
-- Templating
-- Roles
-- Hierarchical inventory
-- Secrets management
-- Modules, lookup plugins, filter plugins
-
----
-
 # Reuse
 
 - Our goal is to use as much common code for Kubernetes management
@@ -197,6 +187,16 @@ way yet
   resource manifests and ensures that Kubernetes meets those expectations
 - Ideally, one manifest template that works for most applications would be
   great, but harder
+
+---
+
+# Ansible's Kubernetes strengths
+
+- Templating
+- Roles
+- Hierarchical inventory
+- Secrets management
+- Modules, lookup plugins, filter plugins
 
 ---
 
@@ -220,18 +220,13 @@ way yet
 # Templating dicts
 
 Sometimes whole sections of manifests differ between environment
-(e.g. if one environment needs annotations for certificates and one doesn't)
 
-```
-annotations:
-  all_envs: have this annotation
-  this_one: is only in some environments
-```
+<div class="image-centre"><img src="images/annotations.png"></div>
 
 ```
 metadata:
   annotations:
-    {{ annotations | to_nice_yaml(indent=2) | indent(4) }}
+    {{ kube_ingress_annotations | to_nice_yaml(indent=2) | indent(4) }}
 ```
 
 ---
@@ -458,6 +453,65 @@ spec:
               name: my-secret-env
 ```
 
+
+
+---
+
+# Modules
+
+* `k8s`&mdash;main module for managing Kubernetes resources
+* `k8s_facts`&mdash;useful for run-time querying of resources
+* `aws_eks_cluster`&mdash;manages AWS EKS clusters
+* `azure_rm_aks`&mdash;manages Azure Kubernetes Service clusters
+* `gcp_container_cluster` and `gcp_container_nodepool`&mdash;manage GKE
+  clusters and node pools
+
+
+---
+
+# `k8s` module
+
+- uses the same manifest definitions as kubectl
+- can take inline resource `definition`s, or `src` from file
+- inline definitions work well with `template` lookup
+  `definition: "{{ lookup('template',` `'path/to/resource.j2') | from_yaml }}"`
+- invoke once with a manifest containing a list of resources, or invoke
+  in a `loop` over a list of resources
+- copes with Custom Resource Definitions (2.7)
+
+<aside class="notes">
+Main difference is how `changed` behaves
+</aside>
+
+
+---
+
+# Plugins
+
+* `yaml` stdout callback plugin is great for having output match input
+* `k8s` lookup plugin returns information about Kubernetes resources
+* `from_yaml` and `from_yaml_all` (2.7) read from templates into
+  module data
+* `b64encode` encodes secrets in base64
+* `k8s_config_hash` and `k8s_config_resource_name` for immutable `ConfigMap`s (likely 2.8)
+
+<aside class="notes">
+I mentioned `to_nice_yaml` and `indent` earlier for converting
+data into kubernetes manifest form
+</aside>
+
+---
+
+# Demo
+
+Scenario:
+
+* We're practising Continuous Delivery with Rolling Deployments and feature flags
+* Upgrade application
+* Enable feature flag
+* Realise feature is buggy
+* Disable feature flag
+
 ---
 
 # Why Immutable `ConfigMap`s?
@@ -494,47 +548,11 @@ Nothing yet garbage collects orphaned ConfigMaps and Secrets
 
 ---
 
-# Demo
-
-Scenario:
-
-* We're practising Continuous Delivery with Blue/Green Deployments and feature flags
-* Upgrade application
-* Enable feature flag
-* Realise feature is buggy
-* Disable feature flag
+# Demo part two
 
 ---
 
-# Modules
-
-* `k8s`&mdash;main module for managing Kubernetes resources
-* `k8s_facts`&mdash;useful for run-time querying of resources
-* `aws_eks_cluster`&mdash;manages AWS EKS clusters
-* `azure_rm_aks`&mdash;manages Azure Kubernetes Service clusters
-* `gcp_container_cluster` and `gcp_container_nodepool`&mdash;manage GKE
-  clusters and node pools
-
-
----
-
-# `k8s` module
-
-- uses the same manifest definitions as kubectl
-- can take inline resource `definition`s, or `src` from file
-- inline definitions work well with `template` lookup
-  `definition: "{{ lookup('template',` `'path/to/resource.j2') | from_yaml }}"`
-- invoke once with a manifest containing a list of resources, or invoke
-  in a `loop` over a list of resources
-- copes with Custom Resource Definitions (2.7)
-
-<aside class="notes">
-Main difference is how `changed` behaves
-</aside>
-
----
-
-# Upcoming features of the `k8s` module
+# Planned k8s improvements
 
 * `append_hash` will enable immutable `ConfigMap`s and `Secret`s (likely 2.8)
 * `validate` will return helpful warning and/or error messages if a resource manifest
@@ -542,23 +560,10 @@ Main difference is how `changed` behaves
 * `wait` will allow you to wait until the Kubernetes resources are actually in the
   desired state (hopefully 2.8)
 
----
-
-# Plugins
-
-* `yaml` stdout callback plugin is great for having output match input
-* `k8s` lookup plugin returns information about Kubernetes resources
-* `from_yaml` and `from_yaml_all` (2.7) read from templates into
-  module data
-* `b64encode` encodes secrets in base64
-* `k8s_config_hash` and `k8s_config_resource_name` for immutable `ConfigMap`s (likely 2.8)
-
-<aside class="notes">
-I mentioned `to_nice_yaml` and `indent` earlier for converting
-data into kubernetes manifest form
-</aside>
-
----
+<div class="footer">
+Read more: <a href="http://willthames.github.io/2017/12/12/using-updated-modules-with-stable-ansible.html">Using
+Updated Modules with Stable Ansible</a>
+</div>
 
 # Thanks for listening
 

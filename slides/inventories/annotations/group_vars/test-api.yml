@@ -1,0 +1,4 @@
+kube_ingress_annotations:
+  kubernetes.io/ingress.class: nginx-external
+  certmanager.k8s.io/cluster-issuer: cluster-issuer
+  certmanager.k8s.io/acme-challenge-type: http01

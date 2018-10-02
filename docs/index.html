@@ -60,15 +60,6 @@ What’s your favourite thing to do when you Ansible?
 <img src="images/kubernetes.png">
 </div>
 </section>
-<section id="motivation" class="slide level1">
-<h1>Motivation</h1>
-<ul>
-<li>Minimise effort to add new applications and environments</li>
-<li>Maintain configuration in source control in a secure fashion</li>
-<li>Use configuration to manage clusters</li>
-<li>Get the best out of Ansible</li>
-</ul>
-</section>
 <section id="about-skedulo" class="slide level1">
 <h1>About Skedulo</h1>
 <ul>
@@ -86,28 +77,33 @@ What’s your favourite thing to do when you Ansible?
 <li>AWS underlying infrastructure built using terraform</li>
 <li>Kubernetes 1.9 built using kops</li>
 <li>Ansible for everything on top</li>
+<li>AWX for deployments</li>
 <li>10s of applications</li>
 </ul>
 <aside class="notes">
-We’re lucky to be learning the lessons at 10s of applications in case we need 100s
+<p>We’re lucky to be learning the lessons at 10s of applications in case we need 100s</p>
+This cluster was built before EKS existed, we were waiting until we were at 1.10 before deciding whether to go to EKS. At the moment the benefits aren’t clear.
 </aside>
 </section>
 <section id="live-demo" class="slide level1">
 <h1>Live Demo</h1>
-<ul>
-<li>Create a brand new Kubernetes cluster in AWS’ Elastic Kubernetes Service</li>
-<li>Demonstrate some of the best practices for Kubernetes configuration management</li>
-<li>Starts now! (10+ minutes to fire up EKS)</li>
-</ul>
+<p>Starts now! (10+ minutes to fire up EKS)</p>
+<div class="image-center">
+<img src="images/eks.png">
+</div>
 <div class="footer">
 <p>Demo code: <a href="https://github.com/willthames/ansiblefest2018">https://github.com/willthames/ansiblefest2018</a></p>
 </div>
 </section>
-<section id="live-demo-architecture" class="slide level1">
-<h1>Live Demo architecture</h1>
-<div class="image-center">
-<img src="images/eks.png">
-</div>
+<section id="live-demo-details" class="slide level1">
+<h1>Live demo details</h1>
+<ul>
+<li>Create a brand new Kubernetes cluster in AWS’ Elastic Kubernetes Service</li>
+<li>Creates Virtual Private Cloud</li>
+<li>Creates Auto Scaling Group for worker nodes</li>
+<li>Demonstrate some of the best practices for Kubernetes configuration management</li>
+<li>From zero to ready-to-go cluster all in Ansible</li>
+</ul>
 </section>
 <section id="about-kubernetes" class="slide level1">
 <h1>About Kubernetes</h1>
@@ -181,6 +177,14 @@ immutable ConfigMaps aren’t possible with kubectl in a declarative way yet
 </aside></li>
 </ul>
 </section>
+<section id="reuse" class="slide level1">
+<h1>Reuse</h1>
+<ul>
+<li>Our goal is to use as much common code for Kubernetes management as possible</li>
+<li>A single Ansible role that takes a set of resource manifests and ensures that Kubernetes meets those expectations</li>
+<li>Ideally, one manifest template that works for most applications would be great, but harder</li>
+</ul>
+</section>
 <section id="ansibles-kubernetes-strengths" class="slide level1">
 <h1>Ansible’s Kubernetes strengths</h1>
 <ul>
@@ -189,14 +193,6 @@ immutable ConfigMaps aren’t possible with kubectl in a declarative way yet
 <li>Hierarchical inventory</li>
 <li>Secrets management</li>
 <li>Modules, lookup plugins, filter plugins</li>
-</ul>
-</section>
-<section id="reuse" class="slide level1">
-<h1>Reuse</h1>
-<ul>
-<li>Our goal is to use as much common code for Kubernetes management as possible</li>
-<li>A single Ansible role that takes a set of resource manifests and ensures that Kubernetes meets those expectations</li>
-<li>Ideally, one manifest template that works for most applications would be great, but harder</li>
 </ul>
 </section>
 <section id="templating" class="slide level1">
@@ -213,13 +209,13 @@ immutable ConfigMaps aren’t possible with kubectl in a declarative way yet
 </section>
 <section id="templating-dicts" class="slide level1">
 <h1>Templating dicts</h1>
-<p>Sometimes whole sections of manifests differ between environment (e.g. if one environment needs annotations for certificates and one doesn’t)</p>
-<pre><code>annotations:
-  all_envs: have this annotation
-  this_one: is only in some environments</code></pre>
+<p>Sometimes whole sections of manifests differ between environment</p>
+<div class="image-centre">
+<img src="images/annotations.png">
+</div>
 <pre><code>metadata:
   annotations:
-    {{ annotations | to_nice_yaml(indent=2) | indent(4) }}</code></pre>
+    {{ kube_ingress_annotations | to_nice_yaml(indent=2) | indent(4) }}</code></pre>
 </section>
 <section id="roles" class="slide level1">
 <h1>Roles</h1>
@@ -408,6 +404,53 @@ spec:
           - secretRef:
               name: my-secret-env</code></pre>
 </section>
+<section id="modules" class="slide level1">
+<h1>Modules</h1>
+<ul>
+<li><code>k8s</code>—main module for managing Kubernetes resources</li>
+<li><code>k8s_facts</code>—useful for run-time querying of resources</li>
+<li><code>aws_eks_cluster</code>—manages AWS EKS clusters</li>
+<li><code>azure_rm_aks</code>—manages Azure Kubernetes Service clusters</li>
+<li><code>gcp_container_cluster</code> and <code>gcp_container_nodepool</code>—manage GKE clusters and node pools</li>
+</ul>
+</section>
+<section id="k8s-module" class="slide level1">
+<h1><code>k8s</code> module</h1>
+<ul>
+<li>uses the same manifest definitions as kubectl</li>
+<li>can take inline resource <code>definition</code>s, or <code>src</code> from file</li>
+<li>inline definitions work well with <code>template</code> lookup <code>definition: &quot;{{ lookup('template',</code> <code>'path/to/resource.j2') | from_yaml }}&quot;</code></li>
+<li>invoke once with a manifest containing a list of resources, or invoke in a <code>loop</code> over a list of resources</li>
+<li>copes with Custom Resource Definitions (2.7)</li>
+</ul>
+<aside class="notes">
+Main difference is how <code>changed</code> behaves
+</aside>
+</section>
+<section id="plugins" class="slide level1">
+<h1>Plugins</h1>
+<ul>
+<li><code>yaml</code> stdout callback plugin is great for having output match input</li>
+<li><code>k8s</code> lookup plugin returns information about Kubernetes resources</li>
+<li><code>from_yaml</code> and <code>from_yaml_all</code> (2.7) read from templates into module data</li>
+<li><code>b64encode</code> encodes secrets in base64</li>
+<li><code>k8s_config_hash</code> and <code>k8s_config_resource_name</code> for immutable <code>ConfigMap</code>s (likely 2.8)</li>
+</ul>
+<aside class="notes">
+I mentioned <code>to_nice_yaml</code> and <code>indent</code> earlier for converting data into kubernetes manifest form
+</aside>
+</section>
+<section id="demo" class="slide level1">
+<h1>Demo</h1>
+<p>Scenario:</p>
+<ul>
+<li>We’re practising Continuous Delivery with Rolling Deployments and feature flags</li>
+<li>Upgrade application</li>
+<li>Enable feature flag</li>
+<li>Realise feature is buggy</li>
+<li>Disable feature flag</li>
+</ul>
+</section>
 <section id="why-immutable-configmaps" class="slide level1">
 <h1>Why Immutable <code>ConfigMap</code>s?</h1>
 <ul>
@@ -433,66 +476,25 @@ Here the constraints are that the Deployment must change to pick up a new Config
 Nothing yet garbage collects orphaned ConfigMaps and Secrets
 </aside>
 </section>
-<section id="demo" class="slide level1">
-<h1>Demo</h1>
-<p>Scenario:</p>
-<ul>
-<li>We’re practising Continuous Delivery with Blue/Green Deployments and feature flags</li>
-<li>Upgrade application</li>
-<li>Enable feature flag</li>
-<li>Realise feature is buggy</li>
-<li>Disable feature flag</li>
-</ul>
+<section id="demo-part-two" class="slide level1">
+<h1>Demo part two</h1>
 </section>
-<section id="modules" class="slide level1">
-<h1>Modules</h1>
-<ul>
-<li><code>k8s</code>—main module for managing Kubernetes resources</li>
-<li><code>k8s_facts</code>—useful for run-time querying of resources</li>
-<li><code>aws_eks_cluster</code>—manages AWS EKS clusters</li>
-<li><code>azure_rm_aks</code>—manages Azure Kubernetes Service clusters</li>
-<li><code>gcp_container_cluster</code> and <code>gcp_container_nodepool</code>—manage GKE clusters and node pools</li>
-</ul>
-</section>
-<section id="k8s-module" class="slide level1">
-<h1><code>k8s</code> module</h1>
-<ul>
-<li>uses the same manifest definitions as kubectl</li>
-<li>can take inline resource <code>definition</code>s, or <code>src</code> from file</li>
-<li>inline definitions work well with <code>template</code> lookup <code>definition: &quot;{{ lookup('template',</code> <code>'path/to/resource.j2') | from_yaml }}&quot;</code></li>
-<li>invoke once with a manifest containing a list of resources, or invoke in a <code>loop</code> over a list of resources</li>
-<li>copes with Custom Resource Definitions (2.7)</li>
-</ul>
-<aside class="notes">
-Main difference is how <code>changed</code> behaves
-</aside>
-</section>
-<section id="upcoming-features-of-the-k8s-module" class="slide level1">
-<h1>Upcoming features of the <code>k8s</code> module</h1>
+<section id="planned-k8s-improvements" class="slide level1">
+<h1>Planned k8s improvements</h1>
 <ul>
 <li><code>append_hash</code> will enable immutable <code>ConfigMap</code>s and <code>Secret</code>s (likely 2.8)</li>
 <li><code>validate</code> will return helpful warning and/or error messages if a resource manifest does not match the Kubernetes resource specification (likely 2.8)</li>
 <li><code>wait</code> will allow you to wait until the Kubernetes resources are actually in the desired state (hopefully 2.8)</li>
 </ul>
-</section>
-<section id="plugins" class="slide level1">
-<h1>Plugins</h1>
-<ul>
-<li><code>yaml</code> stdout callback plugin is great for having output match input</li>
-<li><code>k8s</code> lookup plugin returns information about Kubernetes resources</li>
-<li><code>from_yaml</code> and <code>from_yaml_all</code> (2.7) read from templates into module data</li>
-<li><code>b64encode</code> encodes secrets in base64</li>
-<li><code>k8s_config_hash</code> and <code>k8s_config_resource_name</code> for immutable <code>ConfigMap</code>s (likely 2.8)</li>
-</ul>
-<aside class="notes">
-I mentioned <code>to_nice_yaml</code> and <code>indent</code> earlier for converting data into kubernetes manifest form
-</aside>
+<div class="footer">
+<p>Read more: <a href="http://willthames.github.io/2017/12/12/using-updated-modules-with-stable-ansible.html">Using Updated Modules with Stable Ansible</a></p>
+</div>
 </section>
 <section id="thanks-for-listening" class="slide level1">
 <h1>Thanks for listening</h1>
 <ul>
-<li>Slides: <a href="https://willthames.github.io/ansiblefest2018" class="uri">https://willthames.github.io/ansiblefest2018</a></li>
-<li>Code: <a href="https://github.com/willthames/ansiblefest2018" class="uri">https://github.com/willthames/ansiblefest2018</a></li>
+<li>Slides: <a href="https://willthames.github.io/ansiblefest2018">https://willthames.github.io/ansiblefest2018</a></li>
+<li>Code: <a href="https://github.com/willthames/ansiblefest2018">https://github.com/willthames/ansiblefest2018</a></li>
 </ul>
 </section>
     </div>

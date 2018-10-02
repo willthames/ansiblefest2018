@@ -1,1 +1,1 @@
-fqdn: api.test.example.com
+replicas: 2

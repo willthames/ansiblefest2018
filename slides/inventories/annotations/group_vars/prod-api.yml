@@ -1,0 +1,2 @@
+kube_ingress_annotations:
+  kubernetes.io/ingress.class: nginx-external

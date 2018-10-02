@@ -1,1 +1,2 @@
 db_user: web_user
+hostname: "{{ application }}.{{ domainname }}"

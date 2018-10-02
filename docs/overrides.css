@@ -9,6 +9,10 @@
   font-family: Latin Modern Mono,Source Code Pro,Monaco,monospace !important;
 }
 
+.reveal pre {
+  width: auto !important;
+}
+
 .slides .intro {
   font-size: 75%;
 }
@@ -19,7 +23,7 @@
 
 .slides .footer {
   position: absolute;
-  bottom: 20%;
+  margin-top: 1em;
   font-size: 75%;
 }
 
@@ -30,7 +34,7 @@
 
 .slides ul {
   list-style-position: outside;
-  width: 100%;
+  width: auto;
 }
 
 .slides li {
