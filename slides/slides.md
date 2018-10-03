@@ -103,7 +103,7 @@ Demo code: <a href="https://github.com/willthames/ansiblefest2018">https://githu
 
 ---
 
-# Kubernetes as a common language
+# Kubernetes: a common language
 
 Kubernetes allows the specification of common characteristics
 of applications and services:
@@ -121,7 +121,7 @@ of applications and services:
 
 ---
 
-# Kubernetes as a common language
+# Kubernetes: a common language
 
 * `ConfigMap`&mdash;one or more configuration items in key-value form. Useful
   for setting environment variables or specifying the entire contents
