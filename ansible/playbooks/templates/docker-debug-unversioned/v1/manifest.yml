@@ -21,7 +21,7 @@ spec:
       containers:
         - name: {{ kube_resource_name }}
           # Normally container tag would come from inventory but we want to show changes over time
-          image: {{ (container_registry|default())|ternary(container_registry + "/", "") }}{{ container_image }}:blue
+          image: {{ container_registry|ternary(container_registry + "/", "") }}{{ container_image }}:blue
           imagePullPolicy: {{ image_pull_policy }}
           ports:
             - containerPort: 5000

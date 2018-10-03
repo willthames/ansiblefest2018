@@ -1,5 +1,4 @@
-container_registry: ""
 kube_resource_configmaps: {}
 kube_resource_secrets: {}
 kube_resource_secrets_files: []
-unsafe_show_logs: no
+kube_resource_UNSAFE_show_logs: no

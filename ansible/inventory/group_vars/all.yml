@@ -8,6 +8,7 @@ kube_deployment_labels: "{{ kube_resource_labels | combine(kube_deployment_extra
 kube_deployment_replicas: 5
 kube_resource_namespace: "{{ env }}"
 container_image: willthames/docker_debug
+container_registry: ""
 image_pull_policy: Always
 kube_resource_fqdn: "{{ application }}.{{ kube_domain_name }}"
 kube_domain_name: example.com
