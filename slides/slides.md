@@ -154,8 +154,9 @@ of applications and services:
 - You have to do a template/kubectl/delete dance
 
 <div class="footer">
-<sup>&dagger;</sup><a href="http://willthames.github.io/2016/09/21/using-command-and-shell-in-ansible.html">
-Using Ansible's `shell` and `command` modules properly</a>
+<sup>&dagger;</sup>Using Ansible's `shell` and `command` modules properly:
+<a href="http://willthames.github.io/2016/09/21/using-command-and-shell-in-ansible.html">
+http://willthames.github.io/2016/09/21/using-command-and-shell-in-ansible.html</a>
 </div>
 
 <aside class="notes">
@@ -247,6 +248,10 @@ metadata:
   operations
 * We have moved from per-application roles to one generic
   role for all but a couple of applications
+
+<div class="footer">
+New! <a href="https://github.com/willthames/ansible-role-kube-resource">https://github.com/willthames/ansible-role-kube-resource</a>
+</div>
 
 ---
 
