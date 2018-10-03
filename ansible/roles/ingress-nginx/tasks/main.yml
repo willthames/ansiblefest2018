@@ -1,6 +1,7 @@
 - name: Install nginx ingress controller
   k8s:
     src: "{{ role_path + '/templates/manifest.yml' }}"
+    kubeconfig: "{{ eks_kubeconfig }}"
 
 - name: pause for 15 seconds to wait for ELB
   pause:

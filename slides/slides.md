@@ -66,9 +66,11 @@ the benefits aren't clear.
 
 # Live Demo
 
-Starts now! (10+ minutes to fire up EKS)
+Starts now!
 
-<div class="image-center"><img src="images/eks.png"></div>
+```
+ansible-playbook playbooks/eks.yml -vv -e @overrides.yml -e env=test
+```
 
 <div class="footer">
 Demo code: <a href="https://github.com/willthames/ansiblefest2018">https://github.com/willthames/ansiblefest2018</a>
@@ -83,6 +85,12 @@ Demo code: <a href="https://github.com/willthames/ansiblefest2018">https://githu
 - Creates Auto Scaling Group for worker nodes
 - Demonstrate some of the best practices for Kubernetes configuration management
 - From zero to ready-to-go cluster all in Ansible
+
+---
+
+# Live demo architecture
+
+<div class="image-center"><img src="images/eks.png"></div>
 
 ---
 
@@ -266,7 +274,7 @@ metadata:
 * This reduces the power of inventory and reuse
 
 <div class="footer">
-Read more: <a href="http://willthames.github.io/2017/10/31/making-the-most-of-inventory.html">Making the Most of Inventory</a>
+Making the most of Inventory: <a href="http://willthames.github.io/2017/10/31/making-the-most-of-inventory.html">http://willthames.github.io/2017/10/31/making-the-most-of-inventory.html</a>
 </div>
 
 ---
@@ -304,7 +312,7 @@ definitions
   from a list of layers
 
 <div class="footer">
-Read more: <a href="http://willthames.github.io/2017/11/01/generating-inventory.html">Generating Inventory</a>
+Read more: <a href="http://willthames.github.io/2017/11/01/generating-inventory.html">http://willthames.github.io/2017/11/01/generating-inventory.html</a>
 </div>
 
 <aside class="notes">
@@ -453,8 +461,6 @@ spec:
               name: my-secret-env
 ```
 
-
-
 ---
 
 # Modules
@@ -465,7 +471,6 @@ spec:
 * `azure_rm_aks`&mdash;manages Azure Kubernetes Service clusters
 * `gcp_container_cluster` and `gcp_container_nodepool`&mdash;manage GKE
   clusters and node pools
-
 
 ---
 
@@ -561,9 +566,11 @@ Nothing yet garbage collects orphaned ConfigMaps and Secrets
   desired state (hopefully 2.8)
 
 <div class="footer">
-Read more: <a href="http://willthames.github.io/2017/12/12/using-updated-modules-with-stable-ansible.html">Using
-Updated Modules with Stable Ansible</a>
+Using Updated Modules with Stable Ansible: <a href="http://willthames.github.io/2017/12/12/using-updated-modules-with-stable-ansible.html">
+http://willthames.github.io/2017/12/12/using-updated-modules-with-stable-ansible.html</a>
 </div>
+
+---
 
 # Thanks for listening
 

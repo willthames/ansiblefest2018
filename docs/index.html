@@ -87,10 +87,8 @@ This cluster was built before EKS existed, we were waiting until we were at 1.10
 </section>
 <section id="live-demo" class="slide level1">
 <h1>Live Demo</h1>
-<p>Starts now! (10+ minutes to fire up EKS)</p>
-<div class="image-center">
-<img src="images/eks.png">
-</div>
+<p>Starts now!</p>
+<pre><code>ansible-playbook playbooks/eks.yml -vv -e @overrides.yml -e env=test</code></pre>
 <div class="footer">
 <p>Demo code: <a href="https://github.com/willthames/ansiblefest2018">https://github.com/willthames/ansiblefest2018</a></p>
 </div>
@@ -104,6 +102,12 @@ This cluster was built before EKS existed, we were waiting until we were at 1.10
 <li>Demonstrate some of the best practices for Kubernetes configuration management</li>
 <li>From zero to ready-to-go cluster all in Ansible</li>
 </ul>
+</section>
+<section id="live-demo-architecture" class="slide level1">
+<h1>Live demo architecture</h1>
+<div class="image-center">
+<img src="images/eks.png">
+</div>
 </section>
 <section id="about-kubernetes" class="slide level1">
 <h1>About Kubernetes</h1>
@@ -249,7 +253,7 @@ immutable ConfigMaps aren’t possible with kubectl in a declarative way yet
 <li>This reduces the power of inventory and reuse</li>
 </ul>
 <div class="footer">
-<p>Read more: <a href="http://willthames.github.io/2017/10/31/making-the-most-of-inventory.html">Making the Most of Inventory</a></p>
+<p>Making the most of Inventory: <a href="http://willthames.github.io/2017/10/31/making-the-most-of-inventory.html">http://willthames.github.io/2017/10/31/making-the-most-of-inventory.html</a></p>
 </div>
 </section>
 <section id="using-the-runner-pattern" class="slide level1">
@@ -280,7 +284,7 @@ Allows variables to be reused across applications in resource definitions
 <li><p><code>generator</code> inventory plugin generates such group combinations from a list of layers</p></li>
 </ul>
 <div class="footer">
-<p>Read more: <a href="http://willthames.github.io/2017/11/01/generating-inventory.html">Generating Inventory</a></p>
+<p>Read more: <a href="http://willthames.github.io/2017/11/01/generating-inventory.html">http://willthames.github.io/2017/11/01/generating-inventory.html</a></p>
 </div>
 <aside class="notes">
 This takes the form of a host not being in a group that it needs to be in or a child group not belonging to a particular parent group - this is very easy to get wrong, and very hard to spot. ansible-inventory-grapher was originally written to help troubleshoot such issues, but less necessary now
@@ -487,7 +491,7 @@ Nothing yet garbage collects orphaned ConfigMaps and Secrets
 <li><code>wait</code> will allow you to wait until the Kubernetes resources are actually in the desired state (hopefully 2.8)</li>
 </ul>
 <div class="footer">
-<p>Read more: <a href="http://willthames.github.io/2017/12/12/using-updated-modules-with-stable-ansible.html">Using Updated Modules with Stable Ansible</a></p>
+<p>Using Updated Modules with Stable Ansible: <a href="http://willthames.github.io/2017/12/12/using-updated-modules-with-stable-ansible.html"> http://willthames.github.io/2017/12/12/using-updated-modules-with-stable-ansible.html</a></p>
 </div>
 </section>
 <section id="thanks-for-listening" class="slide level1">
